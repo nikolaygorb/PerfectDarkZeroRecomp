@@ -1,0 +1,35 @@
+# perfectdarkzerorecomp - hardware / rendering settings
+#
+# Loaded automatically at startup (see OnConfigurePaths in
+# src/perfectdarkzerorecomp_app.h) and rewritten by the in-game Settings
+# overlay's "Save to config" button. --flag on the command line and REX_*
+# environment variables always override values from this file - see
+# ../settings/README.md.
+#
+# Flat key = value only
+
+gpu_plugin = "xenos"
+# Graphics API backend rexgpu-xenos loads: "any" (D3D12 first), "d3d12", or
+# "vulkan". Project-defined cvar, see OnPreSetup in
+# src/perfectdarkzerorecomp_app.h.
+graphics_backend = "any"
+vsync = true
+resolution_scale = 1
+async_shader_compilation = true
+native_2x_msaa = true
+anisotropic_override = 1
+
+window_width = 1920
+window_height = 1080
+fullscreen = true
+monitor = 0
+resolution = "1920x1080"
+
+present_letterbox = true
+
+d3d12_debug = false
+
+# Experimental: ported xenia-canary game-patches for PDZ retail (4D5307D3).
+# Off by default (matches upstream).
+pdz_fps60_unlock = true
+pdz_aspect_ratio_16_9 = false
