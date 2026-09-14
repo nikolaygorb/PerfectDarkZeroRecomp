@@ -8,12 +8,52 @@ project(perfectdarkzerorecomp LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(REXSDK_VERSION "0.10.0")
+
+# Fetch the ReXGlue SDK for this platform into rexglue/<platform> if not
+# already present. Idempotent: existing SDK folders are left untouched.
+# Version and platform are passed explicitly so the script stays self-contained.
+if(WIN32 AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|x86_64)$")
+    set(REXSDK_PLATFORM "win-amd64")
+elseif(WIN32 AND CMAKE_SYSTEM_PROCESSOR MATCHES "^ARM64$")
+    message(FATAL_ERROR "win-arm64 ReXGlue SDK release is not published")
+elseif(APPLE AND CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+    set(REXSDK_PLATFORM "mac-arm64")
+elseif(APPLE)
+    set(REXSDK_PLATFORM "mac-amd64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$")
+    set(REXSDK_PLATFORM "linux-arm64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
+    set(REXSDK_PLATFORM "linux-amd64")
+else()
+    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+execute_process(
+    COMMAND ${CMAKE_COMMAND}
+            "-DREXSDK_VERSION='${REXSDK_VERSION}'"
+            "-DREXSDK_PLATFORM=${REXSDK_PLATFORM}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/fetch-rexglue-sdk.cmake")
+
+execute_process(
+    COMMAND ${CMAKE_COMMAND}
+            "-DREXSDK_INCLUDE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/rexglue/${REXSDK_PLATFORM}/include"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/fix-fpscr-exceptions.cmake")
+
 include(generated/rexglue.cmake)
 
-# Sources
+
+include(cmake/build_optimizations.cmake)
+
 set(PERFECTDARKZERORECOMP_SOURCES
     src/main.cpp
 )
+
+if(WIN32)
+    list(APPEND PERFECTDARKZERORECOMP_SOURCES
+        src/perfectdarkzerorecomp.rc
+    )
+endif()
 
 if(WIN32)
     add_executable(perfectdarkzerorecomp WIN32 ${PERFECTDARKZERORECOMP_SOURCES})
@@ -24,7 +64,7 @@ endif()
 rexglue_setup_target(perfectdarkzerorecomp GPU_PLUGINS xenos)
 
 # Codegen regenerates generated/default/*.cpp from scratch and can reintroduce
-# cross-function tail-jumps that don't compile (see tools/fix-unresolved-tail-jumps.cmake).
+# cross-function tail-jumps that don't compile (see cmake/fix-unresolved-tail-jumps.cmake).
 # Reapply the workaround automatically after every codegen run, before anything
 # tries to compile the result. Implemented as a `cmake -P` script (not a shell
 # script) so it runs identically on Windows/Linux/macOS.
@@ -32,7 +72,7 @@ add_custom_command(
     OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/tailjump_patch.stamp"
     COMMAND ${CMAKE_COMMAND}
             "-DGENERATED_DIR=${CMAKE_CURRENT_SOURCE_DIR}/generated/default"
-            -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/fix-unresolved-tail-jumps.cmake"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/fix-unresolved-tail-jumps.cmake"
     COMMAND ${CMAKE_COMMAND} -E touch
             "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/tailjump_patch.stamp"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/codegen.build.stamp"
@@ -41,7 +81,11 @@ add_custom_command(
 )
 add_custom_target(perfectdarkzerorecomp_fix_tailjumps
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/tailjump_patch.stamp")
-add_dependencies(perfectdarkzerorecomp_recomp perfectdarkzerorecomp_fix_tailjumps)
+add_dependencies(perfectdarkzerorecomp perfectdarkzerorecomp_fix_tailjumps)
+
+if(TARGET perfectdarkzerorecomp_recomp)
+    add_dependencies(perfectdarkzerorecomp_recomp perfectdarkzerorecomp_fix_tailjumps)
+endif()
 
 # SDL looks for this file (name set by settings/mapping.toml's
 # hid_mappings_file) next to the exe at startup to fill in gamepads it
