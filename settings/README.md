@@ -120,8 +120,6 @@ in-game Settings overlay's control rebinding screen.
 | `resolution` | string | `"1280x720"` | Guest ("TV") video mode reported to the game - affects the game's own UI scale/aspect logic, separate from the host window size above. |
 | `present_letterbox` | bool | `true` | Letterbox instead of stretch when window and guest aspect ratios differ. |
 | `d3d12_debug` | bool | `false` | D3D12 debug layer. Leave off - noticeably slower. |
-| `pdz_fps60_unlock` | bool | `false` | Experimental. Ported from the community xenia-canary `game-patches` "60 FPS" patch for PDZ retail (title `4D5307D3`). Patched directly into `sub_821410E0` in [`generated/default/perfectdarkzerorecomp_recomp.62.cpp`](../generated/default/perfectdarkzerorecomp_recomp.62.cpp). Off by default, matching upstream. |
-| `pdz_aspect_ratio_16_9` | bool | `false` | Experimental. Ported from xenia-canary's "Aspect Ratio" patch. Unlike the FPS patch, this address is a plain data constant with no corresponding C++ statement, so it's applied as a direct guest-memory write in `OnPostLoadXexImage()` rather than a code edit. |
 
 ## `mapping.toml` reference
 

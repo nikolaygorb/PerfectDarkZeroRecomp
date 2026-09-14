@@ -42,8 +42,8 @@ execute_process(
 
 include(generated/rexglue.cmake)
 
-
-include(cmake/build_optimizations.cmake)
+# temporary disabled
+#include(cmake/build_optimizations.cmake)
 
 set(PERFECTDARKZERORECOMP_SOURCES
     src/main.cpp
