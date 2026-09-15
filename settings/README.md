@@ -29,9 +29,8 @@ config file via `rex::cvar::LoadConfig()`. `PerfectdarkzerorecompApp::
 OnConfigurePaths()` in [`src/perfectdarkzerorecomp_app.h`](../src/perfectdarkzerorecomp_app.h)
 redirects that single slot to `settings/hardware.toml`, then loads both files
 a **second time** in `OnPostSetup()`. Both paths are resolved by walking up
-from the exe's folder until `perfectdarkzerorecomp_manifest.toml` is found,
-so it works from any build preset's output directory without a hardcoded
-`../../../`.
+from the exe's folder until an `assets/` directory is found, so it works from
+any build preset's output directory.
 
 The second pass exists because not every cvar is registered when
 `OnConfigurePaths` runs: window/fullscreen/resolution/monitor (`rex::ui`)
@@ -105,19 +104,22 @@ in-game Settings overlay's control rebinding screen.
 
 ## `hardware.toml` reference
 
+The "Default" column shows the value committed in `hardware.toml` (what the
+build actually ships with), not the SDK's compiled-in default.
+
 | Key | Type | Default | Effect |
 |---|---|---|---|
 | `gpu_plugin` | string | `"xenos"` | GPU emulation plugin to load. Set here rather than on the command line now - see root [README](../README.md#run). A `--gpu_plugin` flag would still override this file if you ever needed a different plugin. |
 | `graphics_backend` | string | `"any"` | Graphics API backend: `"any"` (D3D12 first when both are compiled in), `"d3d12"`, or `"vulkan"`. Project-defined cvar (not from the SDK), wired up in `OnPreSetup()` in [`src/perfectdarkzerorecomp_app.h`](../src/perfectdarkzerorecomp_app.h) - it loads the plugin itself with the requested backend before the SDK's own auto-load (which only ever requests `"any"`) runs. Falls back to automatic selection with a warning if the requested backend isn't compiled into `rexgpu-xenos`. |
-| `vsync` | bool | `true` | Vertical sync. |
-| `resolution_scale` | int | `1` | Internal render-target supersampling, independent of window/guest resolution. |
+| `vsync` | bool | `false` | Vertical sync. |
+| `resolution_scale` | int | `2` | Internal render-target supersampling, independent of window/guest resolution. |
 | `async_shader_compilation` | bool | `true` | Compile shaders on a background thread instead of blocking the render thread - reduces hitches when new shaders are first seen. |
-| `native_2x_msaa` | bool | `false` | Native 2x MSAA on the emulated render targets. |
-| `anisotropic_override` | int | `0` | Forces anisotropic texture filtering to this level (e.g. `16`); `0` leaves the game's own setting alone. |
-| `window_width` / `window_height` | int | `1280` / `720` | Host window size. |
-| `fullscreen` | bool | `false` | Host window fullscreen. |
+| `native_2x_msaa` | bool | `true` | Native 2x MSAA on the emulated render targets. |
+| `anisotropic_override` | int | `1` | Forces anisotropic texture filtering to this level (e.g. `16`); `0` leaves the game's own setting alone. |
+| `window_width` / `window_height` | int | `1920` / `1080` | Host window size. |
+| `fullscreen` | bool | `true` | Host window fullscreen. |
 | `monitor` | int | `0` | Host monitor index for fullscreen. |
-| `resolution` | string | `"1280x720"` | Guest ("TV") video mode reported to the game - affects the game's own UI scale/aspect logic, separate from the host window size above. |
+| `resolution` | string | `"1920x1080"` | Guest ("TV") video mode reported to the game - affects the game's own UI scale/aspect logic, separate from the host window size above. |
 | `present_letterbox` | bool | `true` | Letterbox instead of stretch when window and guest aspect ratios differ. |
 | `d3d12_debug` | bool | `false` | D3D12 debug layer. Leave off - noticeably slower. |
 
@@ -125,7 +127,7 @@ in-game Settings overlay's control rebinding screen.
 
 | Key | Type | Default | Effect |
 |---|---|---|---|
-| `input_backend` | string | `"sdl"` | `""` is rejected by validation (logs a warning, falls back to default) - must be an explicit `"sdl"` or `"xinput"`. |
+| `input_backend` | string | `"sdl"` | `""` is rejected by validation (logs a warning, falls back to default) - must be an explicit `"sdl"`, `"xinput"`, or `"nop"` (input disabled). |
 | `hid_mappings_file` | string | `"gamecontrollerdb.txt"` | Extra SDL gamepad mappings loaded for controllers SDL doesn't already recognize, or `""` to skip. `gamecontrollerdb.txt` next to the exe is staged by `CMakeLists.txt` from [`gamecontrollerdb.txt`](gamecontrollerdb.txt) in this folder, sourced from [mdqinc/SDL_GameControllerDB](https://github.com/mdqinc/SDL_GameControllerDB) - re-copy that file from upstream any time to refresh it. |
 | `guide_button` | bool | `true` | Whether the controller Guide/PS button is routed to the guest. |
 | `mnk_mode` | bool | `true` | Enables keyboard-as-controller input, merged in alongside any physical gamepad (see below). |

@@ -20,14 +20,10 @@ threading go through the ReXGlue runtime.
   `UnresolvedCall`, plus one hand-patched cross-function tail-jump compile
   error - see [Known issues](#known-issues-and-difficulties-encountered)).
 - The build compiles and the executable boots to real GPU rendering.
-- Very early bring-up: only one probe run has been done so far. The stub
-  sweep is active and already logging real missing addresses to
-  `logs/stub_sweep.txt`, including one that trips a null-guest-memory-read
-  access violation shortly after boot - this is the natural next thing to
-  chase (see [Known issues](#known-issues-and-difficulties-encountered)).
-- Iterative, not finished: expect to alternate between running the game,
-  reading `logs/stub_sweep.txt`, adding real addresses to
-  `default_functions.toml`.
+- The optional stub sweep (opt-in via `dev_debug_runtime = true` in
+  [`settings/hardware.toml`](settings/hardware.toml)) logs missing addresses
+  to `logs/stub_sweep.txt`; the missing-function scan logs to
+  `logs/missed_functions.txt`.
 
 ## Requirements
 
@@ -35,21 +31,29 @@ threading go through the ReXGlue runtime.
 - Ninja
 - Clang / LLVM (clang-cl works too) - MSVC alone will not build this (the
   generated code uses GNU/Clang builtins like `__builtin_rotateleft64`)
-- The [ReXGlue SDK release archive](https://github.com/rexglue/rexglue-sdk/releases) - see [`rexglue/README.md`](rexglue/README.md)
-- [extract-xiso](https://github.com/XboxDev/extract-xiso/releases) to unpack the Xbox 360 ISO
+- [ABGX360](https://github.com/BakasuraRCE/abgx360) to dump the Xbox 360 disc,
+  or [extract-xiso](https://github.com/XboxDev/extract-xiso/releases) to
+  unpack an existing ISO
 - Your own legally-owned copy of Perfect Dark Zero, extracted from the Xbox 360 disc/ISO
+
+The ReXGlue SDK release archive is auto-downloaded by the CMake configure
+step - see [Getting the SDK](#getting-the-sdk).
 
 ## Getting the SDK
 
-Download the `win-amd64` release from the
-[ReXGlue SDK releases page](https://github.com/rexglue/rexglue-sdk/releases)
-and extract it into `rexglue/win-amd64` at the repo root. Full steps in
-[`rexglue/README.md`](rexglue/README.md). The SDK itself is gitignored; only
-that README is checked in.
+The ReXGlue SDK version is pinned in [`CMakeLists.txt`](CMakeLists.txt)
+(`REXSDK_VERSION "0.10.0"`). The CMake configure step auto-downloads the
+matching release archive for your platform (Windows / Linux / macOS) into
+`rexglue/<platform>/` via
+[`cmake/fetch-rexglue-sdk.cmake`](cmake/fetch-rexglue-sdk.cmake) - no manual
+download needed. The SDK itself is gitignored; only
+[`rexglue/README.md`](rexglue/README.md) is checked in.
 
 ## Getting the game data
 
-1. Extract the Xbox 360 ISO with
+1. Dump the Xbox 360 disc with
+   [ABGX360](https://github.com/BakasuraRCE/abgx360) (verify against the
+   hashes below) or extract an existing ISO with
    [extract-xiso](https://github.com/XboxDev/extract-xiso/releases), which
    unpacks the disc's file tree.
 2. Copy the extracted contents directly into `assets/`, so `default.xex`
@@ -58,24 +62,35 @@ that README is checked in.
    small tracked exceptions) - nothing from the disc is, or should be,
    committed to this repo.
 
+Target retail release (verify your dump matches):
+
+| Field | Value |
+|---|---|
+| Title ID | `4D5307D3` |
+| XEX CRC | `375EC9BB` |
+| XEX Media ID | `6D6481013A4FDD3DA32BD2D0-750FF1D9` |
+| DMI CRC | `3B16ECC2` |
+| PFI CRC | `739CEAB3` |
+
 ## Build
 
 ```powershell
-cmake --preset local-win-relwithdebinfo
-cmake --build out/build/local-win-relwithdebinfo
+cmake --preset win-amd64-release
+cmake --build --preset win-amd64-release
 ```
 
 ```bash
-cmake --preset local-lin-relwithdebinfo
-cmake --build out/build/local-lin-relwithdebinfo
+cmake --preset linux-amd64-release
+cmake --build --preset linux-amd64-release
 ```
 
-Other available presets: `local-win/lin-debug`, `local-win/lin-release`. These are the
-`CMakeUserPresets.json` presets (gitignored file, already set up in this repo)
-that inherit the platform presets from `CMakePresets.json` and add
-`CMAKE_PREFIX_PATH` pointing at the vendored SDK. Building against the bare
-`win-amd64-*` presets from `CMakePresets.json` directly will fail with
-"ReXGlue SDK not found" - always use the `local-*` presets.
+```bash
+cmake --preset mac-amd64-release
+cmake --build --preset mac-amd64-release
+```
+
+Other presets (`*-debug`, `*-relwithdebinfo`, `*-arm64`) are listed in
+[`CMakePresets.json`](CMakePresets.json).
 
 Codegen (translating `assets/default.xex` into `generated/default/*.cpp`) runs
 automatically as a build step (`perfectdarkzerorecomp_codegen` CMake target)
@@ -102,12 +117,17 @@ at all, despite `CMakePresets.json` having generic presets for it).
 ## Run
 
 ```powershell
-cd out\build\local-relwithdebinfo
+cd out\build\win-amd64-release
 .\perfectdarkzerorecomp.exe
 ```
 
 ```bash
-cd out/build/local-lin-release
+cd out/build/linux-amd64-release
+./perfectdarkzerorecomp
+```
+
+```bash
+cd out/build/mac-amd64-release
 ./perfectdarkzerorecomp
 ```
 
@@ -124,9 +144,8 @@ Useful extra flags/env vars while developing:
 | `--game_data_root <path>` | Overrides the default `<repo_root>/assets` game-files location. |
 | `--gpu_plugin xenos` | Overrides `settings/hardware.toml`'s `gpu_plugin`. Only needed if you want a different plugin than the file specifies. |
 | `--graphics_backend d3d12\|vulkan\|any` | Forces the graphics API `rexgpu-xenos` uses (cvar, default `"any"`, which picks D3D12 first). See [`settings/README.md`](settings/README.md). |
-| `--pdz_fps60_unlock=true` | Experimental, off by default - ported xenia-canary `game-patches` "60 FPS" patch for PDZ retail. See [`settings/README.md`](settings/README.md). |
-| `--pdz_aspect_ratio_16_9=true` | Experimental, off by default - ported xenia-canary `game-patches` "Aspect Ratio" patch. See [`settings/README.md`](settings/README.md). |
-| `PDZ_NO_STUB_SWEEP=1` (env var) | Disables the safety-net stub sweep (see below) - useful to isolate whether it's contributing to a given crash, at the cost of hitting FATAL crashes on any address not yet in `default_functions.toml`. |
+| `--pdz_fps60_unlock=true` | Ported xenia-canary `game-patches` "60 FPS" patch for PDZ retail. Enabled by default in [`settings/hardware.toml`](settings/hardware.toml). See [`settings/README.md`](settings/README.md). |
+| `--pdz_aspect_ratio_16_9=true` | Ported xenia-canary `game-patches` "Aspect Ratio" patch. Off by default. See [`settings/README.md`](settings/README.md). |
 
 Logs are written to `out\build\<preset>\logs\*.log` (the exe is built `WIN32`,
 so nothing prints to the console).
@@ -170,32 +189,33 @@ reference and precedence rules.
    log line as the real end boundary, then narrowed the range and reran to
    confirm zero out-of-range hits.
 8. Ported two optional gameplay patches from xenia-canary's `game-patches`
-   repository (`60 FPS`, `Aspect Ratio`) as off-by-default cvars - see
-   "Ported game patches" for how to find and add more.
+   repository (`60 FPS`, `Aspect Ratio`) as cvars. The `60 FPS` patch is
+   enabled by default in [`settings/hardware.toml`](settings/hardware.toml);
+   the `Aspect Ratio` patch is off by default.
 
 ## Known issues and difficulties encountered
 
 - **Manual function boundaries are an ongoing, iterative process**.
-- **Codegen edge case: cross-function tail jumps.** `sub_82401A40` (in
-  `generated/default/perfectdarkzerorecomp_recomp.190.cpp`) has two
-  conditional branches into what codegen decided was a *different* sealed
-  function (`sub_82401B08`, in `perfectdarkzerorecomp_recomp.131.cpp`) - a
-  shared-tail/fallthrough pattern the analyzer didn't merge back together.
-  Since generated functions are separate C++ functions, a `goto` across that
-  boundary doesn't compile ("use of undeclared label"). Patched both sites
-  to log a warning and return instead, since duplicating or refactoring the
-  shared tail block correctly would need much deeper disassembly work than
-  this bring-up pass covered.
-- **A stubbed-function access violation right after boot.** The very first
-  probe run already hits `Unhandled guest access violation: read of guest
-  0x00000000` a few seconds in - almost certainly a stubbed function
-  returning garbage that gets dereferenced downstream. `logs/stub_sweep.txt` from that run is the starting point:
-  find the addresses it logged, work out which ones are real, add them to
-  `default_functions.toml`, rebuild, repeat.
+- **Codegen edge case: cross-function tail jumps.** PPC compilers sometimes
+  emit a shared tail block split across two functions by rexglue's
+  Discover/Merge phases - a `goto` across that boundary doesn't compile
+  ("use of undeclared label"). The build now auto-patches these after every
+  codegen run via [`cmake/fix-unresolved-tail-jumps.cmake`](cmake/fix-unresolved-tail-jumps.cmake):
+  each broken `goto` is replaced with a logged early return. Duplicating or
+  refactoring the shared tail block correctly would need much deeper
+  disassembly work than this bring-up pass covered.
+- **Stubbed-function access violations.** When the stub sweep is enabled
+  (`dev_debug_runtime = true`), stubbed functions return garbage that can be
+  dereferenced downstream, producing access violations like
+  `Unhandled guest access violation: read of guest 0x00000000`.
+  `logs/stub_sweep.txt` is the starting point: find the addresses it logged,
+  work out which ones are real, add them to `default_functions.toml`, rebuild,
+  repeat.
 
 ## Credits
 
 - [ReXGlue SDK](https://github.com/rexglue/rexglue-sdk) ([releases](https://github.com/rexglue/rexglue-sdk/releases))
+- [ABGX360](https://github.com/BakasuraRCE/abgx360) - used to dump the Xbox 360 disc
 - [extract-xiso](https://github.com/XboxDev/extract-xiso) ([releases](https://github.com/XboxDev/extract-xiso/releases)) -
   used to unpack the Xbox 360 ISO into the file tree copied into `assets/`
 - [xenia](https://github.com/xenia-project/xenia) / [xenia-canary](https://github.com/xenia-canary/xenia-canary) -
