@@ -51,8 +51,7 @@ public:
   // void OnLoadXexImage(std::string& xex_image) override {}
   void OnPostLoadXexImage() override
   {
-    game_patches::Fps60();
-    game_patches::AspectRatio16_9();
+    game_patches::ApplyEnabledPatches();
   }
 
   void OnPostSetup() override

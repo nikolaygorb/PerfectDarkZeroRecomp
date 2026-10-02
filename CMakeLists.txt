@@ -47,6 +47,8 @@ include(generated/rexglue.cmake)
 
 set(PERFECTDARKZERORECOMP_SOURCES
     src/main.cpp
+    src/game_patches.cpp
+    src/game_cvars.cpp
 )
 
 if(WIN32)
@@ -62,30 +64,6 @@ else()
 endif()
 
 rexglue_setup_target(perfectdarkzerorecomp GPU_PLUGINS xenos)
-
-# Codegen regenerates generated/default/*.cpp from scratch and can reintroduce
-# cross-function tail-jumps that don't compile (see cmake/fix-unresolved-tail-jumps.cmake).
-# Reapply the workaround automatically after every codegen run, before anything
-# tries to compile the result. Implemented as a `cmake -P` script (not a shell
-# script) so it runs identically on Windows/Linux/macOS.
-add_custom_command(
-    OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/tailjump_patch.stamp"
-    COMMAND ${CMAKE_COMMAND}
-            "-DGENERATED_DIR=${CMAKE_CURRENT_SOURCE_DIR}/generated/default"
-            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/fix-unresolved-tail-jumps.cmake"
-    COMMAND ${CMAKE_COMMAND} -E touch
-            "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/tailjump_patch.stamp"
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/codegen.build.stamp"
-    COMMENT "Patching unresolved cross-function tail-jumps in generated code"
-    VERBATIM
-)
-add_custom_target(perfectdarkzerorecomp_fix_tailjumps
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/tailjump_patch.stamp")
-add_dependencies(perfectdarkzerorecomp perfectdarkzerorecomp_fix_tailjumps)
-
-if(TARGET perfectdarkzerorecomp_recomp)
-    add_dependencies(perfectdarkzerorecomp_recomp perfectdarkzerorecomp_fix_tailjumps)
-endif()
 
 # SDL looks for this file (name set by settings/mapping.toml's
 # hid_mappings_file) next to the exe at startup to fill in gamepads it

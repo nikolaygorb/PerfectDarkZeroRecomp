@@ -37,4 +37,7 @@
 0x8266417C = {}
 0x82664190 = {}
 0x826641A0 = {}
+# Shared switch-handler blocks reached from sub_82401A40 and sub_82401B08.
+0x82401B58 = { parent = 0x82401A40, end = 0x82401F90 }
+0x82401DA8 = { parent = 0x82401A40, end = 0x82401F90 }
 

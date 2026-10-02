@@ -11,17 +11,25 @@ namespace GameConstants
 
 namespace GameConstants::PatchConstants
 {
+  struct RegisterPatch
+  {
+    std::uintptr_t call_site;
+    std::uint32_t preserve_mask;
+    std::uint32_t set_bits;
+  };
+
   struct Patch
   {
     std::uintptr_t address;
     std::uint32_t value;
   };
 
-  constexpr Patch Fps60()
+  constexpr RegisterPatch Fps60()
   {
-    return Patch{
-        0x826CFB77,
-        0x01};
+    return RegisterPatch{
+        0x826CFBB0,
+        0x0000FFFF,
+        0x00010000};
   }
 
   constexpr Patch AspectRatio()

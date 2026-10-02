@@ -122,6 +122,11 @@ build actually ships with), not the SDK's compiled-in default.
 | `resolution` | string | `"1920x1080"` | Guest ("TV") video mode reported to the game - affects the game's own UI scale/aspect logic, separate from the host window size above. |
 | `present_letterbox` | bool | `true` | Letterbox instead of stretch when window and guest aspect ratios differ. |
 | `d3d12_debug` | bool | `false` | D3D12 debug layer. Leave off - noticeably slower. |
+| `pdz_fps60_unlock` | bool | `true` | Port of Xenia-canary's Perfect Dark Zero "60 FPS" patch. Applied through a C++ function override and can be toggled at runtime. |
+| `pdz_aspect_ratio_16_9` | bool | `false` | Port of Xenia-canary's "Aspect Ratio" patch. Applied while loading the game image; restart after changing it. |
+
+The source Xenia patch file also contains a "Bottomless Clip" patch. It is
+not ported yet, so there is no corresponding cvar in this project.
 
 ## `mapping.toml` reference
 
@@ -149,10 +154,8 @@ currently listed), it belongs in one of these two files loaded from
 instead.
 
 `graphics_backend` isn't an SDK cvar - it's defined with
-`REXCVAR_DEFINE_STRING` directly in
-[`src/perfectdarkzerorecomp_app.h`](../src/perfectdarkzerorecomp_app.h),
-registering at static-init time just like the SDK's own, so it loads fine on
-the first pass. This is the pattern to follow for any other
-project-specific toggle (e.g. a future ported gameplay patch): declare it next to `PerfectdarkzerorecompApp`,
-read it with `REXCVAR_GET(name)` wherever it's needed, and document it in
-this table.
+`REXCVAR_DEFINE_STRING` in [`src/game_cvars.cpp`](../src/game_cvars.cpp),
+with its declaration in [`src/game_cvars.h`](../src/game_cvars.h). Project
+cvars register at static-init time, so they load with the first config pass.
+Define future project-specific toggles there, read them with
+`REXCVAR_GET(name)`, and document them in this table.

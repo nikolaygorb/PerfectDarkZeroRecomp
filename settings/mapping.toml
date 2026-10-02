@@ -31,7 +31,8 @@ guide_button = true
 # mnk_mouse additionally routes mouse movement to the right stick.
 mnk_mode = true
 mnk_mouse = true
-mnk_sensitivity = 1.0
+mnk_sensitivity = 5.0
+right_stick_deadzone_percentage = 0.2
 
 # ─────────────────────────────────────────────────────────────
 # Keyboard bindings (default values)

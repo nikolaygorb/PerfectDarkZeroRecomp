@@ -8,9 +8,7 @@
 # /memories/repo/crash-diagnosis.md for the original diagnosis).
 #
 # rexglue/<platform> is deleted/re-extracted wholesale on a fresh SDK fetch,
-# wiping any direct header edit - so this is reapplied every configure the
-# same way fix-unresolved-tail-jumps.cmake reapplies the tail-jump workaround
-# to generated code. Idempotent (a file already containing DisableExceptions
+# wiping any direct header edit - so this is reapplied every configure.
 # is left untouched) and platform-generic (driven by REXSDK_INCLUDE_DIR, so
 # it runs for whichever platform got fetched - win-amd64, linux-amd64, etc.).
 #

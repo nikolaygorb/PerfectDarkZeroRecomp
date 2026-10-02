@@ -196,14 +196,10 @@ reference and precedence rules.
 ## Known issues and difficulties encountered
 
 - **Manual function boundaries are an ongoing, iterative process**.
-- **Codegen edge case: cross-function tail jumps.** PPC compilers sometimes
-  emit a shared tail block split across two functions by rexglue's
-  Discover/Merge phases - a `goto` across that boundary doesn't compile
-  ("use of undeclared label"). The build now auto-patches these after every
-  codegen run via [`cmake/fix-unresolved-tail-jumps.cmake`](cmake/fix-unresolved-tail-jumps.cmake):
-  each broken `goto` is replaced with a logged early return. Duplicating or
-  refactoring the shared tail block correctly would need much deeper
-  disassembly work than this bring-up pass covered.
+- **Shared PPC tail blocks.** The handler at `0x82401A40` also branches into
+   blocks used by `0x82401B08`. The `[functions]` parent-chunk entries in
+   [`default_functions.toml`](default_functions.toml) make those blocks explicit,
+   so rexglue emits callable chunk functions instead of cross-function `goto`s.
 - **Stubbed-function access violations.** When the stub sweep is enabled
   (`dev_debug_runtime = true`), stubbed functions return garbage that can be
   dereferenced downstream, producing access violations like

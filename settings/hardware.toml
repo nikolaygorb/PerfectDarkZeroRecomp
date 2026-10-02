@@ -17,13 +17,13 @@ vsync = false
 resolution_scale = 2
 async_shader_compilation = true
 native_2x_msaa = true
-anisotropic_override = 1
+anisotropic_override = 2
 
 texture_cache_memory_limit_soft = 1024
 texture_cache_memory_limit_hard = 4096
-clear_memory_page_state = true
-readback_memexport = true
-readback_memexport_fast = true
+clear_memory_page_state = false
+readback_memexport = false
+readback_memexport_fast = false
 host_present_from_non_ui_thread	= true
 
 window_width = 1920
@@ -59,6 +59,13 @@ headless = false
 
 # trace, debug, info, warn, error
 log_level = "critical"
+
+use_dedicated_xma_thread = false
+xma_decoder = "new"
+mount_cache = true
+framerate_limit = 0
+d3d12_readback_resolve = false
+readback_resolve = "none"
 
 gpu_allow_invalid_fetch_constants = true
 
