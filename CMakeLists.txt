@@ -3,52 +3,39 @@
 # SDK boilerplate lives in generated/rexglue.cmake.
 
 cmake_minimum_required(VERSION 3.25)
-project(perfectdarkzerorecomp LANGUAGES CXX)
+project(perfectdarkzerorecomp LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(REXSDK_VERSION "0.10.0")
 
-# Fetch the ReXGlue SDK for this platform into rexglue/<platform> if not
-# already present. Idempotent: existing SDK folders are left untouched.
-# Version and platform are passed explicitly so the script stays self-contained.
-if(WIN32 AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|x86_64)$")
-    set(REXSDK_PLATFORM "win-amd64")
-elseif(WIN32 AND CMAKE_SYSTEM_PROCESSOR MATCHES "^ARM64$")
-    message(FATAL_ERROR "win-arm64 ReXGlue SDK release is not published")
-elseif(APPLE AND CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
-    set(REXSDK_PLATFORM "mac-arm64")
-elseif(APPLE)
-    set(REXSDK_PLATFORM "mac-amd64")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$")
-    set(REXSDK_PLATFORM "linux-arm64")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
-    set(REXSDK_PLATFORM "linux-amd64")
-else()
-    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_PROCESSOR}")
+# Fix git symlinks on Windows (libmspack in SDK uses symlinks)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/fix_symlinks.cmake)
+
+# CPU optimization presets
+#include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_optimizations.cmake)
+
+# Build ReXGlue SDK from source (git submodule)
+set(REXSDK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rexglue-sdk" CACHE PATH "Path to rexglue-sdk source tree" FORCE)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/fix-fpscr-exceptions.cmake)
+
+# Enable both graphics backends
+if(WIN32)
+    set(REXGLUE_USE_D3D12 ON CACHE BOOL "Enable D3D12 graphics backend")
 endif()
+set(REXGLUE_USE_VULKAN ON CACHE BOOL "Enable Vulkan graphics backend")
 
-execute_process(
-    COMMAND ${CMAKE_COMMAND}
-            "-DREXSDK_VERSION='${REXSDK_VERSION}'"
-            "-DREXSDK_PLATFORM=${REXSDK_PLATFORM}"
-            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/fetch-rexglue-sdk.cmake")
-
-execute_process(
-    COMMAND ${CMAKE_COMMAND}
-            "-DREXSDK_INCLUDE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/rexglue/${REXSDK_PLATFORM}/include"
-            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/fix-fpscr-exceptions.cmake")
 
 include(generated/rexglue.cmake)
-
-# temporary disabled
-#include(cmake/build_optimizations.cmake)
 
 set(PERFECTDARKZERORECOMP_SOURCES
     src/main.cpp
     src/game_patches.cpp
     src/game_cvars.cpp
+    src/render/gpu_wait_hook.cpp
+    src/mod/third_person.cpp
 )
 
 if(WIN32)
@@ -64,6 +51,9 @@ else()
 endif()
 
 rexglue_setup_target(perfectdarkzerorecomp GPU_PLUGINS xenos)
+
+# Link against rexui for UI support (imgui, etc.)
+target_link_libraries(perfectdarkzerorecomp PRIVATE rex::ui)
 
 # SDL looks for this file (name set by settings/mapping.toml's
 # hid_mappings_file) next to the exe at startup to fill in gamepads it

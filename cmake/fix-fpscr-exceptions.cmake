@@ -7,15 +7,18 @@
 # (STATUS_FLOAT_INEXACT_RESULT 0xC000008F etc. - see
 # /memories/repo/crash-diagnosis.md for the original diagnosis).
 #
-# rexglue/<platform> is deleted/re-extracted wholesale on a fresh SDK fetch,
-# wiping any direct header edit - so this is reapplied every configure.
-# is left untouched) and platform-generic (driven by REXSDK_INCLUDE_DIR, so
-# it runs for whichever platform got fetched - win-amd64, linux-amd64, etc.).
+# The SDK is the thirdparty/rexglue-sdk submodule, so the headers are patched in
+# place. The patch is idempotent and is reapplied on every configure, which also
+# covers a submodule update or checkout that restores the pristine headers.
 #
-# Usage: cmake -DREXSDK_INCLUDE_DIR=<path>/rexglue/<platform>/include -P fix-fpscr-exceptions.cmake
+# Included from the root CMakeLists.txt (REXSDK_DIR is set there), or standalone:
+#   cmake -DREXSDK_DIR=<path>/thirdparty/rexglue-sdk -P fix-fpscr-exceptions.cmake
 
 if(NOT DEFINED REXSDK_INCLUDE_DIR)
-    message(FATAL_ERROR "REXSDK_INCLUDE_DIR must be passed via -DREXSDK_INCLUDE_DIR=<path>")
+    if(NOT DEFINED REXSDK_DIR)
+        message(FATAL_ERROR "REXSDK_DIR (or REXSDK_INCLUDE_DIR) must be defined")
+    endif()
+    set(REXSDK_INCLUDE_DIR "${REXSDK_DIR}/include")
 endif()
 
 set(fpscr_file "${REXSDK_INCLUDE_DIR}/rex/platform/fpscr.h")

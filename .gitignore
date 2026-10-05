@@ -6,4 +6,5 @@ generated/*
 out/*
 rexglue/*
 !rexglue/README.md
+tools/
 *.log

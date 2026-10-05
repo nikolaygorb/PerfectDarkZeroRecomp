@@ -68,6 +68,7 @@ d3d12_readback_resolve = false
 readback_resolve = "none"
 
 gpu_allow_invalid_fetch_constants = true
+depth_bias_shader_offset = true
 
 # Perf CSV log path (per-frame metrics). Empty = disabled.
 # Only works when REXGLUE_ENABLE_PERF_COUNTERS is defined (non-Release).
@@ -81,3 +82,13 @@ dev_debug_runtime = false
 # https://github.com/xenia-canary/game-patches/blob/main/patches/4D5307D3%20-%20Perfect%20Dark%20Zero.patch.toml
 pdz_fps60_unlock = true
 pdz_aspect_ratio_16_9 = false
+
+# 0 = busy spin (original), 1 = yield the core, 2 = sleep 200us
+pdz_gpu_wait_mode = 0
+
+# Third-person camera, toggled in game with bind_third_person (V).
+# Camera-local offset in ~cm; z < 0 = behind. See src/mod/README.md.
+pdz_tp_enable = false
+pdz_tp_offset_x = -80.0
+pdz_tp_offset_y = 10.0
+pdz_tp_offset_z = -320.0

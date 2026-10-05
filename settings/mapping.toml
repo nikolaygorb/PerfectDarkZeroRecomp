@@ -78,3 +78,6 @@ keybind_back = "Z,Tab"                 # Back button
 keybind_start = "X,Return"             # Start button
 keybind_guide = ""                     # Guide button (empty = disabled)
 
+
+# Mod hotkeys
+bind_third_person = "V"                # Toggle third-person camera (pdz_tp_*)

@@ -16,6 +16,7 @@
 #include "debug_tools.h"
 #include "game_cvars.h"
 #include "game_patches.h"
+#include "mod/third_person.h"
 #include "utils.h"
 
 #ifdef REXGLUE_ENABLE_PERF_COUNTERS
@@ -52,6 +53,13 @@ public:
   void OnPostLoadXexImage() override
   {
     game_patches::ApplyEnabledPatches();
+  }
+
+  void OnCreateDialogs(rex::ui::ImGuiDrawer *) override
+  {
+    // Registered before OnPostSetup reloads the settings files, so the key
+    // can be rebound from mapping.toml.
+    third_person::RegisterBinds();
   }
 
   void OnPostSetup() override

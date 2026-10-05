@@ -7,6 +7,8 @@ namespace GameConstants
 {
   constexpr uint32_t kCodeBase = 0x82140000;
   constexpr uint32_t kCodeEnd = 0x82CE62AC;
+  constexpr uint32_t kImageBase = 0x82000000;
+  constexpr uint32_t kImageSize = 0x013D0000;
 }
 
 namespace GameConstants::PatchConstants
