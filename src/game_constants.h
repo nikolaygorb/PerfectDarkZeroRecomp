@@ -40,4 +40,20 @@ namespace GameConstants::PatchConstants
         0x820EC158,
         0x4018E38E};
   }
+
+  struct LanguagePatch
+  {
+    std::uintptr_t call_site;
+    std::uint32_t address;
+    std::uint32_t max_language;
+  };
+
+  // sub_82393540 -> sub_82394750, which builds the loc path from the language global.
+  constexpr LanguagePatch Language()
+  {
+    return LanguagePatch{
+        0x82393690,
+        0x82D280E8,
+        10};
+  }
 }

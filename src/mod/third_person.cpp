@@ -5,8 +5,10 @@
 // the camera is moved by it (with a collision ray pulling it back in). Rolls
 // animate this offset (~cm, z < 0 = behind) and reset it to zero after.
 // pdz_tp_enable forces the offset every frame; bind_third_person toggles it.
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 
@@ -20,6 +22,8 @@
 REX_EXTERN(__imp__sub_8220D9C8);
 REX_EXTERN(__imp__sub_82637BA0);
 REX_EXTERN(__imp__sub_825B2190);
+REX_EXTERN(__imp__sub_826285D0);
+REX_EXTERN(sub_82252798);
 
 namespace
 {
@@ -136,6 +140,95 @@ namespace
     const uint32_t binoculars = g_binoculars_object.load(std::memory_order_relaxed);
     return binoculars ? LoadBe32(base, binoculars + kBinocularsLockTarget) : 0;
   }
+
+  // Wall collision. The game sweeps a sphere from the eye to the offset camera
+  // position and moves a separate camera vector (+172) towards the result at a
+  // limited speed (sub_826285D0); the camera is eye + basis * that vector. It
+  // could stay caught on walls and ceilings. Instead the mod casts its own ray
+  // each frame and writes the camera vector itself.
+  constexpr uint32_t kCameraVector = 172;
+  // In sub_8220D9C8's frame: the camera-local x, y, z axes in world space.
+  constexpr uint32_t kCallerBasis = 240;
+  // Ray hit collector, built like sub_8220D9C8 does: vtable, +4 and +108
+  // cleared, then vtbl+12 resets it. vtbl+8 = has hit, +80 = hit fraction.
+  constexpr uint32_t kRayCollectorVtbl = 0x820925C0;
+  constexpr uint32_t kRayLayer = 16; // the game's camera collision layer
+  constexpr float kWallMargin = 20.0f; // keep the near plane out of the wall
+  constexpr double kEaseOutPerSecond = 8.0;
+
+  // Gameplay camera mode inside its update while it carries our offset.
+  uint32_t g_collision_mode = 0;
+  // Fraction of the offset in use: snaps in when a wall gets close, eases back
+  // out when it is gone.
+  float g_fraction = 1.0f;
+  bool g_fraction_valid = false;
+  std::chrono::steady_clock::time_point g_fraction_time;
+
+  // Returns r3; 0 if the method can't be resolved.
+  uint32_t CallVirtual(PPCContext &ctx, uint8_t *base, uint32_t object, uint32_t slot)
+  {
+    PPCFunc *fn = rex::runtime::ResolveIndirectFunction(LoadBe32(base, LoadBe32(base, object) + slot));
+    if (!fn)
+    {
+      return 0;
+    }
+    ctx.r3.u64 = object;
+    fn(ctx, base);
+    return ctx.r3.u32;
+  }
+
+  // How far along eye -> end the camera can go before it hits something (0..1).
+  float FreeFraction(PPCContext &ctx, uint8_t *base, const float eye[3], const float end[3])
+  {
+    float length2 = 0.0f;
+    for (int i = 0; i < 3; ++i)
+    {
+      length2 += (end[i] - eye[i]) * (end[i] - eye[i]);
+    }
+    const float length = std::sqrt(length2);
+    if (length < 1.0f)
+    {
+      return 1.0f;
+    }
+
+    // Scratch below the caller's frame; the callees build their frames under sp.
+    rex::CallFrame frame(ctx);
+    const uint32_t sp = (ctx.r1.u32 - 0x400) & ~0xFu;
+    const uint32_t from = sp + 0x200;
+    const uint32_t to = sp + 0x210;
+    const uint32_t collector = sp + 0x280;
+    frame.ctx.r1.u64 = sp;
+    for (uint32_t i = 0; i < 3; ++i)
+    {
+      StoreBeFloat(base, from + i * 4, eye[i]);
+      StoreBeFloat(base, to + i * 4, end[i]);
+    }
+    std::memset(base + collector, 0, 0x100);
+    const uint32_t vtbl = kRayCollectorVtbl;
+    for (int i = 0; i < 4; ++i)
+    {
+      base[collector + i] = uint8_t(vtbl >> (24 - 8 * i));
+    }
+    CallVirtual(frame.ctx, base, collector, 12);
+
+    frame.ctx.r3.u64 = kRayLayer;
+    frame.ctx.r4.u64 = from;
+    frame.ctx.r5.u64 = to;
+    frame.ctx.r6.u64 = collector;
+    frame.ctx.r7.u64 = 1;
+    sub_82252798(frame.ctx, base);
+
+    if ((CallVirtual(frame.ctx, base, collector, 8) & 0xFF) == 0)
+    {
+      return 1.0f;
+    }
+    const float hit = LoadBeFloat(base, collector + 80);
+    if (!(hit >= 0.0f && hit <= 1.0f))
+    {
+      return 1.0f;
+    }
+    return std::max(0.0f, hit - kWallMargin / length);
+  }
 } // namespace
 
 REX_HOOK_RAW(sub_8220D9C8)
@@ -193,7 +286,13 @@ REX_HOOK_RAW(sub_8220D9C8)
     g_offset_mode = 0;
   }
 
+  if (is_player && !offset_written)
+  {
+    g_fraction_valid = false;
+  }
+  g_collision_mode = offset_written ? mode : 0;
   __imp__sub_8220D9C8(ctx, base);
+  g_collision_mode = 0;
 
   // While the binoculars hold a lock, they keep the target on the line through
   // the camera position along the eye direction, but the camera looks at the
@@ -240,6 +339,54 @@ REX_HOOK_RAW(sub_8220D9C8)
                          LoadBeFloat(base, mode + kEyePosition + axis);
       StoreBeFloat(base, mode + kLookPoint + axis, look);
     }
+  }
+}
+
+// sub_826285D0(from, to, out, f1 = max step): moves a vector towards another.
+// The gameplay camera uses it on its camera vector (+172) towards the game's
+// collision result, right before camera = eye (still at +4) + basis * vector.
+REX_HOOK_RAW(sub_826285D0)
+{
+  const uint32_t mode = g_collision_mode;
+  if (!mode || ctx.r3.u32 != mode + kCameraVector || ctx.r5.u32 != mode + kCameraVector)
+  {
+    __imp__sub_826285D0(ctx, base);
+    return;
+  }
+
+  // The camera update's frame is still ctx.r1: this function is a leaf.
+  float eye[3], offset[3], end[3];
+  for (uint32_t i = 0; i < 3; ++i)
+  {
+    eye[i] = LoadBeFloat(base, mode + kCameraPosition + i * 4);
+    offset[i] = LoadBeFloat(base, mode + kOffset + i * 4);
+  }
+  for (uint32_t i = 0; i < 3; ++i)
+  {
+    end[i] = eye[i];
+    for (uint32_t axis = 0; axis < 3; ++axis)
+    {
+      end[i] += LoadBeFloat(base, ctx.r1.u32 + kCallerBasis + axis * 16 + i * 4) * offset[axis];
+    }
+  }
+
+  const float free = FreeFraction(ctx, base, eye, end);
+  const auto now = std::chrono::steady_clock::now();
+  if (!g_fraction_valid || free < g_fraction)
+  {
+    g_fraction = free;
+  }
+  else
+  {
+    const double dt = std::min(0.1, std::chrono::duration<double>(now - g_fraction_time).count());
+    g_fraction += (free - g_fraction) * static_cast<float>(1.0 - std::exp(-kEaseOutPerSecond * dt));
+  }
+  g_fraction_valid = true;
+  g_fraction_time = now;
+
+  for (uint32_t i = 0; i < 3; ++i)
+  {
+    StoreBeFloat(base, mode + kCameraVector + i * 4, offset[i] * g_fraction);
   }
 }
 

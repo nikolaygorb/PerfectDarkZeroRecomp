@@ -124,6 +124,7 @@ build actually ships with), not the SDK's compiled-in default.
 | `d3d12_debug` | bool | `false` | D3D12 debug layer. Leave off - noticeably slower. |
 | `pdz_fps60_unlock` | bool | `true` | Port of Xenia-canary's Perfect Dark Zero "60 FPS" patch. Applied through a C++ function override and can be toggled at runtime. |
 | `pdz_aspect_ratio_16_9` | bool | `false` | Port of Xenia-canary's "Aspect Ratio" patch. Applied while loading the game image; restart after changing it. |
+| `user_language` | int | `1` | Game language: `1` English, `3` German, `4` French. SDK cvar, applied by a hook in [`src/game_patches.cpp`](../src/game_patches.cpp) because the SDK's `XGetLanguage` ignores it. Languages missing from `loc/` fall back to English. Restart after changing it. |
 
 The source Xenia patch file also contains a "Bottomless Clip" patch. It is
 not ported yet, so there is no corresponding cvar in this project.

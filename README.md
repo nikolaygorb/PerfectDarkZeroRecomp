@@ -17,7 +17,7 @@ is translated into C++ and compiled. There is no emulator.
 - Fully playable on Windows: video, audio, gameplay, achievements and saves.
 - Keyboard and mouse support.
 - Optional patches: 60 FPS (on by default) and 16:9.
-- Third-person camera mod: press **V** to toggle. See [`src/mod/README.md`](src/mod/README.md).
+- Third-person camera and language selection, see [Mods](#mods).
 
 ## Requirements
 
@@ -61,6 +61,26 @@ out\build\win-amd64-release\perfectdarkzerorecomp.exe
 Game files are found in `<repo>/assets` automatically; use `--game_data_root`
 to point somewhere else. Logs go to `out\build\<preset>\logs\`.
 
+## Mods
+
+### Third-person camera
+
+Press **V** in game to switch between first and third person. Set
+`pdz_tp_enable = true` in `hardware.toml` to start in third person. Camera
+offset and the rest of the options are in [`src/mod/README.md`](src/mod/README.md).
+
+### Language
+
+Set `user_language` in `hardware.toml` and restart the game:
+
+```
+# 1 = English, 3 = German, 4 = French
+user_language = 1   
+```
+
+Only languages your copy of the game includes will work (check
+`assets/pdz/ASSETS/loc/`). Anything else falls back to English.
+
 ## Configuration
 
 All settings live in [`settings/`](settings/README.md) and are loaded at startup.
@@ -68,7 +88,7 @@ Most can also be changed in game from the F4 overlay.
 
 | File | What it covers |
 |---|---|
-| `hardware.toml` | renderer, window, patches (`pdz_fps60_unlock`, `pdz_aspect_ratio_16_9`), `pdz_gpu_wait_mode`, third-person camera (`pdz_tp_*`) |
+| `hardware.toml` | renderer, window, patches (`pdz_fps60_unlock`, `pdz_aspect_ratio_16_9`), `pdz_gpu_wait_mode`, third-person camera (`pdz_tp_*`), language (`user_language`) |
 | `mapping.toml` | input backend, keyboard and mouse (`mnk_*`), key bindings including `bind_third_person` |
 
 ## Development notes

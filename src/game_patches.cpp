@@ -9,7 +9,9 @@
 #include <rex/cvar.h>
 #include <rex/hook.h>
 #include <rex/logging.h>
+#include <rex/memory/utils.h>
 #include <rex/runtime.h>
+#include <rex/system/flags.h>
 #include <rex/system/xmemory.h>
 
 #include "game_cvars.h"
@@ -107,6 +109,25 @@ REX_HOOK_RAW(sub_826CE6B8)
   }
 
   __imp__sub_826CE6B8(ctx, base);
+}
+
+REX_EXTERN(__imp__sub_82394750);
+
+// The SDK's XGetLanguage ignores user_language; a missing loc folder falls back to English.
+REX_HOOK_RAW(sub_82394750)
+{
+  const auto patch = GameConstants::PatchConstants::Language();
+  if (ctx.lr == patch.call_site && base)
+  {
+    uint32_t language = REXCVAR_GET(user_language);
+    if (language < 1 || language > patch.max_language)
+    {
+      language = 1;
+    }
+    rex::memory::store_and_swap<uint32_t>(base + patch.address, language);
+  }
+
+  __imp__sub_82394750(ctx, base);
 }
 
 REX_EXTERN(__imp__sub_82AC4CB8);

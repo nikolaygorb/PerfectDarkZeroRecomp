@@ -92,3 +92,12 @@ pdz_tp_enable = false
 pdz_tp_offset_x = -80.0
 pdz_tp_offset_y = 10.0
 pdz_tp_offset_z = -320.0
+
+# Xbox locale language:
+#  1 = English      2 = Japanese     3 = German      4 = French
+#  5 = Spanish      6 = Italian      7 = Korean      8 = Traditional Chinese
+#  9 = Portuguese  10 = Simplified Chinese  11 = Polish  12 = Russian
+##
+# Languages without implementation in your legal disk will fall back to English.
+##
+user_language = 1

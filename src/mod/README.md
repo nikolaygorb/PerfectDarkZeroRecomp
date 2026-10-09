@@ -18,7 +18,6 @@ Settings in `settings/hardware.toml` (all can be changed live from the F4 overla
 | `pdz_tp_zoom_mode` | `2` | What happens when zoomed: `0` stays behind the player, `1` goes first person, `2` slides forward |
 | `pdz_tp_binoculars_fp` | `false` | Use first person while looking through the binoculars |
 | `pdz_tp_auto_fp_gadgets` | `true` | Use first person while hacking with the Data Thief |
-
 ## How it works
 
 - **The gameplay camera.** It is camera mode 0, updated by `sub_8220D9C8`. It
@@ -32,26 +31,6 @@ Settings in `settings/hardware.toml` (all can be changed live from the F4 overla
 - **Only the player's camera.** The CamSpy uses the same camera mode. The mod
   checks the camera's target and only changes the player's camera.
 
-## Problems we hit, and fixes
-
-- **The Data Thief screen was missing.** Held items draw either a first-person
-  or a third-person model, and the game decides which by checking whether the
-  camera is at the eyes. The Data Thief's screen only exists on the
-  first-person model. Fix: switch to first person while the Data Thief is
-  updating.
-- **The CamSpy view flickered.** The offset was applied to the CamSpy's camera
-  as well. Fix: only change cameras whose target is the player.
-- **The crosshair jumped when zooming.** Jumping into the eyes changes the
-  angle you see things from. Moving straight forward also failed, because the
-  camera looks at the 10 m point, not straight ahead. Fix: when zoomed, move
-  the camera along the line from the camera to that point. The crosshair then
-  stays where it was.
-- **Binocular lock-on was off to the side.** The lock keeps the target on a
-  line from the camera that runs parallel to the player's view. The camera
-  looks at the 10 m point instead, which is about 3.5° off that line, and at
-  binocular zoom that is a third of the screen. Fix: while locked, aim the
-  camera at the target's position (`+48` in the target object). After the lock
-  ends, keep looking along that parallel line until the zoom ends.
 
 ## What didn't work
 
