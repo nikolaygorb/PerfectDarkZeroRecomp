@@ -1,4 +1,13 @@
-# Perfect Dark Zero: Reinstated
+# Perfect Dark Zero Reinstated
+
+<div align="center">
+  <img src="assets/icon.png" alt="PerfectDarkZeroRecomp" width="480">
+</div>
+
+A static recompilation of [**Perfect Dark Zero**](https://en.wikipedia.org/wiki/Perfect_Dark_Zero)
+(Xbox 360, 2005, Title ID `4D5307D3`) to native PC, built on the
+[ReXGlue SDK](https://github.com/rexglue/rexglue-sdk). The game's PowerPC code
+is translated into C++ and compiled. There is no emulator.
 
 A community enhancement of **Perfect Dark Zero**, built on [PerfectDarkZeroRecomp](https://github.com/nikolaygorb/PerfectDarkZeroRecomp).
 
