@@ -40,4 +40,6 @@
 # Shared switch-handler blocks reached from sub_82401A40 and sub_82401B08.
 0x82401B58 = { parent = 0x82401A40, end = 0x82401F90 }
 0x82401DA8 = { parent = 0x82401A40, end = 0x82401F90 }
-
+# found during campaign progress
+0x8223D550 = {}
+0x8223D568 = {}
