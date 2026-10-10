@@ -1,4 +1,4 @@
-# PerfectDarkZeroRecomp
+# Perfect Dark Zero Reinstated
 
 <div align="center">
   <img src="assets/icon.png" alt="PerfectDarkZeroRecomp" width="480">
