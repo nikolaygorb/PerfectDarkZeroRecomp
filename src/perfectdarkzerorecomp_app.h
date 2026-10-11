@@ -18,6 +18,8 @@
 #include "game_patches.h"
 #include "mod/third_person.h"
 #include "utils.h"
+#include "local_profiles.h"
+#include <rex/ui/keybinds.h>
 
 #ifdef REXGLUE_ENABLE_PERF_COUNTERS
 #include <rex/perf/counter.h>
@@ -55,11 +57,15 @@ public:
     game_patches::ApplyEnabledPatches();
   }
 
-  void OnCreateDialogs(rex::ui::ImGuiDrawer *) override
+  void OnCreateDialogs(rex::ui::ImGuiDrawer *drawer) override
   {
     // Registered before OnPostSetup reloads the settings files, so the key
     // can be rebound from mapping.toml.
     third_person::RegisterBinds();
+    profiles_ = pdz_profiles::MakeProfileDialog(drawer);
+    rex::ui::RegisterBind("bind_pdz_profiles", "F9", "Local player profiles", [] {
+      pdz_profiles::Toggle();
+    });
   }
 
   void OnPostSetup() override
@@ -83,6 +89,8 @@ public:
 
   void OnShutdown() override
   {
+    rex::ui::UnregisterBind("bind_pdz_profiles");
+    profiles_.reset();
 #ifdef REXGLUE_ENABLE_PERF_COUNTERS
     rex::perf::FlushCsv();
 #endif
@@ -104,6 +112,7 @@ public:
     // Input mapping lives in its own file, loaded manually below (the SDK
     // only auto-loads the single path above).
     utils::LoadSettingsFiles();
+    pdz_profiles::Configure(paths.user_data_root);
   }
 
   // Override virtual hooks for customization:
@@ -117,4 +126,6 @@ public:
   // std::unique_ptr<rex::ui::ImGuiDialog> CreateAchievementNotificationDialog() override;
   // void OnShutdown() override {}
   // void OnConfigurePaths(rex::PathConfig& paths) override {}
+private:
+  std::unique_ptr<rex::ui::ImGuiDialog> profiles_;
 };
