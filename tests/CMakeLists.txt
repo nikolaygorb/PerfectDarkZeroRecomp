@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.25)
+project(pdz_profile_tests LANGUAGES CXX)
+enable_testing()
+add_executable(profile_store_test profile_store_test.cpp)
+target_compile_features(profile_store_test PRIVATE cxx_std_23)
+# Assertions remain enabled in Release so validation is never compiled out.
+if(MSVC)
+  target_compile_options(profile_store_test PRIVATE /UNDEBUG)
+else()
+  target_compile_options(profile_store_test PRIVATE -UNDEBUG)
+endif()
+add_test(NAME profile_store COMMAND profile_store_test)

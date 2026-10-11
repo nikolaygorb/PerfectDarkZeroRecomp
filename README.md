@@ -46,7 +46,7 @@ is translated into C++ and compiled. There is no emulator.
    ```
 
    There are also Linux and macOS presets (`linux-amd64-*`, `mac-*`), but only
-   Windows is tested. Codegen (`default.xex` → `generated/`) runs automatically
+   Windows is tested. Codegen (`default.xex` â†’ `generated/`) runs automatically
    as part of the build.
 
 Check that your dump is the expected retail release: XEX CRC `375EC9BB`,
@@ -80,6 +80,23 @@ user_language = 1
 
 Only languages your copy of the game includes will work (check
 `assets/pdz/ASSETS/loc/`). Anything else falls back to English.
+
+### Local player profiles
+
+Press **F9** to open the local profile manager. Create a profile, rename it, or
+select the profile to use on the next launch. The game's sign-in prompt also
+opens this dialog. Restart the game after switching profiles or changing a name.
+
+The original profile keeps the existing save location. Additional profiles use
+`profiles/<numeric-id>/` beneath the configured user-data folder, so renaming a
+profile does not move its saves. The list and next-launch selection are stored
+in `local_profiles.txt` in the original user-data folder. Settings and the shader
+cache remain shared. Names accept 1–15 ASCII letters, digits, spaces, `-`, or `_`;
+leading/trailing spaces and duplicate names are rejected.
+
+This manages one local player profile per launch, not Xbox Live accounts or
+multiple simultaneous signed-in players. Profile deletion is not provided.
+Rebind `bind_pdz_profiles` in `mapping.toml` to change the shortcut.
 
 ## Configuration
 

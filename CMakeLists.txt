@@ -31,6 +31,7 @@ include(generated/rexglue.cmake)
 
 set(PERFECTDARKZERORECOMP_SOURCES
     src/main.cpp
+    src/local_profiles.cpp
     src/game_patches.cpp
     src/game_cvars.cpp
     src/render/gpu_wait_hook.cpp
