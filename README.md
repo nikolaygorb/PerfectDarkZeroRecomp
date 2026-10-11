@@ -26,7 +26,7 @@ The enhancement explores that earlier style through optional gameplay rules, imp
 - **Original, Modern, and Classic campaign rules**, with changes to health recovery and combat behavior in the enhanced modes.
 - Enhanced-mode weapon options, including a no-spread setting and automatic fire while zoomed for supported weapons.
 - Keyboard and mouse controls, with **mouse menu navigation enabled by default** in the modded distribution.
-- Visible stowed weapons seen in games, concept arts, and renders.
+- Visible stowed weapons, seen in game's concept arts and renders.
 - Physics timing corrections and separate cutscene frame-rate handling. So now cutscenes can be played at a stable speed at frames above 60 FPS, alongside fixed collision detection when the game is played at 120 FPS or higher.
 
 ### Combat Arena customization
