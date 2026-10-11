@@ -26,26 +26,23 @@ The enhancement explores that earlier style through optional gameplay rules, imp
 - **Original, Modern, and Classic campaign rules**, with changes to health recovery and combat behavior in the enhanced modes.
 - Enhanced-mode weapon options, including a no-spread setting and automatic fire while zoomed for supported weapons.
 - Keyboard and mouse controls, with **mouse menu navigation enabled by default** in the modded distribution.
-- A first-/third-person camera toggle, bound to **Y** in the modded configuration.
-- Weapon raising near walls and obstacles, with firing and reloading able to interrupt the raised state.
-- Visible stowed weapons and fixes to weapon placement.
+- Visible stowed weapons.
 - Physics timing corrections and separate cutscene frame-rate handling.
 
 ### Combat Arena customization
 
 - Expanded character selection using characters from across the game.
-- Separate **Head Customize** and **Body Customize** choices for Player 1.
+- Reenable **Head Customize** and **Body Customize** choices.
 - Individual bot customization through bot options.
-- Separate male, female, and unrestricted random choices for heads and bodies.
-- Custom combinations, including **Joanna — Short Dress**, and matching first-person hand models for the dress characters.
+- New outfit for Jo called **Joanna — Short Dress**, and matching first-person hand models for the dress characters.
 
 Head/body combinations are still being refined. Some models need individual adjustments to attachments, textures, or animations.
 
 ### Missions and presentation
 
-- **Surface, Mission 14**, enabled by default in the modded update, with custom terrain, soundtrack, and mission artwork.
-- A custom Joanna Short Dress appearance for the Nightclub mission.
-- Revised menus, an in-game changelog, and a GitHub-backed updater.
+- Custom missions being add to keep the tradition of additional missions being added when each difficulty is completed.
+- A custom Joanna Short Dress appearances for only the Nightclub mission.
+- Revised menus, an in-game changelog, and a in game updater.
 - Tuned hardware defaults and a mild shadow lift intended to reveal dark details without washing out the whole picture.
 
 ## Current release and ongoing work
@@ -69,7 +66,6 @@ The current archive updates an **existing modded PDZ installation**. It is not a
 
 The in-game updater targets this fork's releases and preserves settings, profiles, saves, and base-game files. Existing settings can therefore differ from the defaults supplied for a fresh modded configuration.
 
-Keep Surface enabled to play Mission 14. Its supporting files are part of the modded update; an upstream executable by itself does not provide the same enhancement setup.
 
 ## Settings and controls
 
