@@ -11,4 +11,5 @@ namespace game_patches
 
     bool IsEnabled(PatchId patch);
     void ApplyEnabledPatches();
+    void UpdateFov();
 } // namespace game_patches

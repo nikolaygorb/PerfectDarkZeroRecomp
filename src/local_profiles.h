@@ -19,6 +19,8 @@ namespace local_profiles
   // Registers the dialog hotkey (bind_local_profiles, default F9).
   void Init(rex::ui::ImGuiDrawer *drawer);
 
+  bool IsOpen();
+
   // Closes the dialog. Must run while the ImGui drawer is still alive.
   void Shutdown();
 } // namespace local_profiles

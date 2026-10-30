@@ -38,6 +38,7 @@ set(PERFECTDARKZERORECOMP_SOURCES
     src/timing/physics_step_hook.cpp
     src/timing/cutscene_frame_cap_hook.cpp
     src/mod/third_person.cpp
+    src/mod/fov_settings.cpp
 )
 
 if(WIN32)

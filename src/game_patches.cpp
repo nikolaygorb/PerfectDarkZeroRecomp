@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <bit>
 #include <chrono>
 #include <cstdint>
 #include <cstring>
@@ -194,5 +195,28 @@ namespace game_patches
   void ApplyEnabledPatches()
   {
     ApplyAspectRatioPatch();
+    UpdateFov();
+  }
+
+  void UpdateFov()
+  {
+    // Called on the guest thread before the camera update. The UI changes
+    // only the cvar; it never writes guest memory or changes page protection.
+    auto *rt = rex::Runtime::instance();
+    if (!rt)
+    {
+      return;
+    }
+    const uint32_t address = GameConstants::PatchConstants::kFovAddress;
+    const uint32_t bits = std::bit_cast<uint32_t>(static_cast<float>(REXCVAR_GET(pdz_fov)));
+    const std::array<uint8_t, 4> bytes{
+        static_cast<uint8_t>(bits >> 24),
+        static_cast<uint8_t>(bits >> 16),
+        static_cast<uint8_t>(bits >> 8),
+        static_cast<uint8_t>(bits)};
+    if (std::memcmp(rt->memory()->TranslateVirtual(address), bytes.data(), bytes.size()) != 0)
+    {
+      WriteGuestBytes(address, bytes.data(), static_cast<uint32_t>(bytes.size()));
+    }
   }
 } // namespace game_patches

@@ -84,6 +84,9 @@ dev_debug_runtime = false
 pdz_fps60_unlock = true
 pdz_aspect_ratio_16_9 = false
 
+# Vertical FoV before aiming/zoom. Original: 58; range: 40-120.
+pdz_fov = 58.0
+
 # 0 = busy spin (original), 1 = yield the core, 2 = sleep 200us
 pdz_gpu_wait_mode = 1
 

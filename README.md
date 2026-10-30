@@ -78,6 +78,14 @@ Press **V** in game to switch between first and third person. Set
 `pdz_tp_enable = true` in `hardware.toml` to start in third person. Camera
 offset and the rest of the options are in [`src/mod/README.md`](src/mod/README.md).
 
+### Field of view
+
+Press F6 to open the FoV slider (40–120 vertical degrees, original 58), with a
+button to reset to the original value. Press F6 again to close it. You can also
+edit `pdz_fov` in the F4 Settings overlay under Gameplay. Weapon zoom still works
+at any FoV. To use another key, change `bind_fov_settings` in
+`settings/mapping.toml`. Use **Save to config** to keep the value between sessions.
+
 ### Language
 
 Set `user_language` in `hardware.toml` and restart the game:
@@ -127,8 +135,8 @@ Most can also be changed in game from the F4 overlay.
 
 | File | What it covers |
 |---|---|
-| `hardware.toml` | renderer, window, patches (`pdz_fps60_unlock`, `pdz_aspect_ratio_16_9`), `pdz_gpu_wait_mode`, third-person camera (`pdz_tp_*`), language (`user_language`), split-screen (`max_local_users`, `keyboard_own_player`) |
-| `mapping.toml` | input backend, keyboard and mouse (`mnk_*`), key bindings including `bind_third_person` |
+| `hardware.toml` | renderer, window, patches (`pdz_fps60_unlock`, `pdz_aspect_ratio_16_9`), field of view (`pdz_fov`), `pdz_gpu_wait_mode`, third-person camera (`pdz_tp_*`), language (`user_language`), split-screen (`max_local_users`, `keyboard_own_player`) |
+| `mapping.toml` | input backend, keyboard and mouse (`mnk_*`), key bindings including `bind_third_person` and `bind_fov_settings` |
 
 ## Development notes
 

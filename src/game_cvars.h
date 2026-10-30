@@ -5,6 +5,7 @@
 
 REXCVAR_DECLARE(std::string, graphics_backend);
 REXCVAR_DECLARE(bool, pdz_fps60_unlock);
+REXCVAR_DECLARE(double, pdz_fov);
 REXCVAR_DECLARE(bool, pdz_aspect_ratio_16_9);
 REXCVAR_DECLARE(int32_t, pdz_gpu_wait_mode);
 REXCVAR_DECLARE(bool, dev_debug_runtime);

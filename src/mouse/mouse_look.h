@@ -43,8 +43,11 @@ namespace pdz::mouse
     MouseLook &operator=(const MouseLook &) = delete;
 
     // Call once, after the main window has opened. imgui is optional: when
-    // given, the mouse is handed back while an overlay wants it.
-    void Attach(rex::ui::Window *window, rex::ui::ImGuiDrawer *imgui = nullptr);
+    // given, the mouse is handed back while an overlay wants it. overlay_open
+    // is optional too: while it returns true the pointer stays free, since a
+    // locked pointer can't reach an overlay to make it want the mouse.
+    void Attach(rex::ui::Window *window, rex::ui::ImGuiDrawer *imgui = nullptr,
+                std::function<bool()> overlay_open = nullptr);
 
     // pdz_mouse_look is on. Cheap; lets a hook skip its own work.
     bool Enabled() const;
@@ -92,6 +95,7 @@ namespace pdz::mouse
     rex::ui::Window *window_ = nullptr;
     rex::ui::WindowedAppContext *ui_ = nullptr;
     rex::ui::ImGuiDrawer *imgui_ = nullptr;
+    std::function<bool()> overlay_open_;
 
     mutable std::mutex mu_;
     Phase phase_ = Phase::kIdle;

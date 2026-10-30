@@ -17,9 +17,9 @@
 // Turning right lowers the yaw (from the stick path); the pitch grows downward (checked in
 // game - the stick path alone suggested the opposite).
 //
-// Zoom: the camera FOV is 58 deg * player vtable +656 (= 1 - player+6812). The turn is
-// scaled by tan(fov / 2) / tan(29 deg), so the picture moves under the mouse at the same
-// rate at the screen center whatever the zoom.
+// Zoom: the camera FOV is pdz_fov * player vtable +656 (= 1 - player+6812). The turn is
+// scaled by tan(fov / 2) / tan(pdz_fov / 2), so the picture moves under the mouse at the
+// same rate at the screen center whatever the zoom.
 #include <rex/cvar.h>
 #include <rex/hook.h>
 
@@ -29,6 +29,7 @@
 #include <cstring>
 
 #include "../game_constants.h"
+#include "../game_cvars.h"
 #include "mouse_look.h"
 
 REX_EXTERN(__imp__sub_8259FD70);
@@ -63,7 +64,6 @@ namespace
   constexpr uint32_t kVtblZoom = 656;
   constexpr uint32_t kZoomFunc = 0x8259D0D8;
   constexpr uint32_t kPlayerZoomOut = 6812;
-  constexpr double kBaseFovDegrees = 58.0;
 
   // Look tuning block: *(*(0x82D6B2B4) + 12), pitch limit (degrees) at +64.
   constexpr uint32_t kGameGlobals = 0x82D6B2B4;
@@ -126,13 +126,14 @@ namespace
     {
       return 1.0;
     }
-    const double fov = kBaseFovDegrees * (1.0 - LoadBeFloat(base, player + kPlayerZoomOut));
+    const double base_fov = REXCVAR_GET(pdz_fov);
+    const double fov = base_fov * (1.0 - LoadBeFloat(base, player + kPlayerZoomOut));
     if (!PlausibleFov(fov))
     {
       return 1.0;
     }
     const double scale = std::tan(fov * 0.5 * kRadiansPerDegree) /
-                         std::tan(kBaseFovDegrees * 0.5 * kRadiansPerDegree);
+                         std::tan(base_fov * 0.5 * kRadiansPerDegree);
     if (scale >= 0.999)
     {
       return 1.0;

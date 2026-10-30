@@ -395,6 +395,11 @@ namespace local_profiles
       } });
   }
 
+  bool IsOpen()
+  {
+    return g_dialog != nullptr;
+  }
+
   void Shutdown()
   {
     rex::ui::UnregisterBind("bind_local_profiles");

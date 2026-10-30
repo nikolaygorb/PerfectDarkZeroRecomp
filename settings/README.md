@@ -124,6 +124,7 @@ build actually ships with), not the SDK's compiled-in default.
 | `d3d12_debug` | bool | `false` | D3D12 debug layer. Leave off - noticeably slower. |
 | `pdz_fps60_unlock` | bool | `true` | Port of Xenia-canary's Perfect Dark Zero "60 FPS" patch. Applied through a C++ function override and can be toggled at runtime. |
 | `pdz_aspect_ratio_16_9` | bool | `false` | Port of Xenia-canary's "Aspect Ratio" patch. Applied while loading the game image; restart after changing it. |
+| `pdz_fov` | double | `58.0` | Vertical field of view before zoom, range `40`-`120`. Changed in game with `bind_fov_settings` (F6). |
 | `user_language` | int | `1` | Game language: `1` English, `3` German, `4` French. SDK cvar, applied by a hook in [`src/game_patches.cpp`](../src/game_patches.cpp) because the SDK's `XGetLanguage` ignores it. Languages missing from `loc/` fall back to English. Restart after changing it. |
 | `pdz_gpu_wait_mode` | int | `1` | How the game's GPU wait loop idles: `0` busy spin (original), `1` yield the core, `2` sleep 200 µs. Hook in `src/render/`. |
 | `pdz_tp_enable` | bool | `false` | Start in third person; toggled in game with `bind_third_person` (V). Offset keys `pdz_tp_offset_x` / `_y` / `_z` (`-80.0` / `10.0` / `-320.0`) are described in [`src/mod/README.md`](../src/mod/README.md). |
@@ -182,7 +183,7 @@ game itself decides how split-screen looks and when it accepts new players.
 | `pdz_mouse_look` | bool | `true` | Native mouse look: on foot the mouse turns the camera directly, skipping the game's stick dead zone, response curve and acceleration (aim assist still applies). Hook in [`src/mouse/mouse_look_hook.cpp`](../src/mouse/mouse_look_hook.cpp). Needs `mnk_mode` and `mnk_mouse`. |
 | `pdz_mouse_sensitivity` | double | `2.0` | Native mouse look: camera turn per mouse count = 0.022 deg x this. Range `0.01`-`100.0`. Independent of the in-game sensitivity option. |
 | `pdz_mouse_invert_x` / `pdz_mouse_invert_y` | bool | `false` | Invert native mouse look axes. The in-game Invert option doesn't apply to it. |
-| `pdz_mouse_zoom_scaling` | bool | `true` | Scale native mouse look by `tan(fov/2) / tan(58deg/2)` while zoomed, so the picture moves under the mouse at the same rate. |
+| `pdz_mouse_zoom_scaling` | bool | `true` | Scale native mouse look by `tan(fov/2) / tan(pdz_fov/2)` while zoomed, so the picture moves under the mouse at the same rate. |
 | `pdz_mouse_zoom_sensitivity` | double | `1.0` | Extra factor on native mouse look while zoomed in. |
 Gamepad button layout itself (DualShock 4, DualSense, Xbox, Switch Pro, ...)
 isn't a setting here - SDL auto-detects the controller and maps it to the

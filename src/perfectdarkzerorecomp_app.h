@@ -17,6 +17,7 @@
 #include "game_cvars.h"
 #include "game_patches.h"
 #include "local_profiles.h"
+#include "mod/fov_settings.h"
 #include "mod/third_person.h"
 #include "mouse/mouse_look.h"
 #include "utils.h"
@@ -63,7 +64,14 @@ public:
     // can be rebound from mapping.toml.
     third_person::RegisterBinds();
     local_profiles::Init(drawer);
-    pdz::mouse::MouseLook::Get().Attach(window(), drawer);
+    fov_settings::Init(drawer);
+    pdz::mouse::MouseLook::Get().Attach(window(), drawer, [this]
+                                        { return HasInteractiveOverlay(); });
+  }
+
+  bool HasAppOverlay() const override
+  {
+    return fov_settings::IsOpen() || local_profiles::IsOpen();
   }
 
   void OnPostSetup() override
@@ -87,6 +95,7 @@ public:
 
   void OnShutdown() override
   {
+    fov_settings::Shutdown();
     local_profiles::Shutdown();
 #ifdef REXGLUE_ENABLE_PERF_COUNTERS
     rex::perf::FlushCsv();

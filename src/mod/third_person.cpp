@@ -17,6 +17,7 @@
 
 #include "../game_constants.h"
 #include "../game_cvars.h"
+#include "../game_patches.h"
 #include "third_person.h"
 
 REX_EXTERN(__imp__sub_8220D9C8);
@@ -53,7 +54,7 @@ namespace
   }
 
   // Gameplay camera mode fields. Before its update: the offset vector and the
-  // vertical FOV (58 degrees * player zoom factor, from the previous frame).
+  // vertical FOV (base FOV * player zoom factor, from the previous frame).
   // After its update: final camera position, look point (eye + view rotation *
   // (0, 0, kLookDistance)) and this frame's eye position.
   constexpr uint32_t kCameraPosition = 4;
@@ -65,7 +66,8 @@ namespace
 
   // Zoom is detected from the FOV: enter as soon as it drops, leave only once
   // it is fully back; the gap keeps the camera from flapping at a threshold.
-  constexpr float kBaseFov = 58.0f;
+  // The thresholds are for the original FOV; pdz_fov is scaled to it first.
+  constexpr float kBaseFov = GameConstants::PatchConstants::kFovOriginal;
   constexpr float kZoomEnterFov = kBaseFov - 1.0f;
   constexpr float kZoomExitFov = kBaseFov - 0.3f;
   bool g_zoomed = false;
@@ -240,7 +242,11 @@ REX_HOOK_RAW(sub_8220D9C8)
   const float fov = LoadBeFloat(base, mode + kFov);
   if (is_player && fov > 0.0f)
   {
-    g_zoomed = g_zoomed ? fov < kZoomExitFov : fov < kZoomEnterFov;
+    // mode + kFov is from the previous frame. Compare it with the FoV
+    // applied to that frame, before applying a changed slider value below.
+    const float scaled_fov =
+        fov * kBaseFov / LoadBeFloat(base, GameConstants::PatchConstants::kFovAddress);
+    g_zoomed = g_zoomed ? scaled_fov < kZoomExitFov : scaled_fov < kZoomEnterFov;
   }
   // A zoom that starts with the binoculars counts as a binocular zoom until it
   // ends.
@@ -290,6 +296,7 @@ REX_HOOK_RAW(sub_8220D9C8)
   {
     g_fraction_valid = false;
   }
+  game_patches::UpdateFov();
   g_collision_mode = offset_written ? mode : 0;
   __imp__sub_8220D9C8(ctx, base);
   g_collision_mode = 0;
