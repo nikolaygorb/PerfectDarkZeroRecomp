@@ -4,7 +4,7 @@
 
 REXCVAR_DEFINE_STRING(graphics_backend, "any", "GPU",
                       "Graphics API backend: any, d3d12, vulkan")
-    .allowed({"any", "d3d12", "vulkan"});
+    .allowed({"any", "d3d12", "d3d11", "vulkan"});
 
 REXCVAR_DEFINE_DOUBLE(pdz_fov, GameConstants::PatchConstants::kFovOriginal, "Gameplay",
                       "Field of view (vertical degrees before zoom; original: 58)")

@@ -24,7 +24,7 @@ DLSS, XeSS, FSR 2 and later as real temporal upscalers, frame generation inside 
 
 ## Texture replacement (HD texture packs)
 
-A pack is a folder with an `index.tsv` and DDS files: textures whose original data is in the pack are drawn with the pack's images, at any size with the original's aspect ratio (2x, 4x, 2.5x …). Only 2D textures in DXT1, DXT3, DXT5, DXN (ATI2) and 32-bit RGBA are replaced, and the image must be in the same format as the original. Both backends. How it works, how to make a pack, and an example: [texture-replacement.md](texture-replacement.md).
+A pack is a folder with an `index.tsv` and DDS files: textures whose original data is in the pack are drawn with the pack's images, at any size with the original's aspect ratio (2x, 4x, 2.5x …). Only 2D textures in DXT1, DXT3, DXT5, DXN (ATI2) and 32-bit RGBA are replaced, and the image must be in the same format as the original. All backends. How it works, how to make a pack, and an example: [texture-replacement.md](texture-replacement.md).
 
 | Setting | Values | What it does |
 |---|---|---|
@@ -48,6 +48,32 @@ The backend is chosen by the title. Titles that let the player pick it usually h
 
 Which one to use: Direct3D 12 is the default and usually the safer choice on Windows. Try Vulkan if a game shows a rendering bug or runs worse on Direct3D 12 on your GPU, or if a tool you want needs it. Report a bug that shows on only one backend together with the backend name.
 
+### Direct3D 11 (experimental)
+
+An SDK built with `REXGLUE_USE_D3D11=ON` (Windows, off by default) also has a Direct3D 11 backend, for GPUs that have neither Direct3D 12 nor Vulkan. It is chosen only by name (`graphics_backend = "d3d11"` in titles that pass the setting on), never by `any`. It needs Direct3D feature level 11.0; 11.1 is better (see below).
+
+When to use it: only when the title doesn't start on Direct3D 12 or Vulkan on your GPU, for example an older GPU or driver without Direct3D 12. On a GPU with Direct3D 12 or Vulkan, use those: they are faster and more accurate, and get fixes first. Direct3D 11 is experimental: so far only Fuse has been checked through, and other games may show a wrong picture.
+
+What works as on Direct3D 12: drawing with the game's textures, the game's output with its gamma ramp and `swap_post_effect`, `resolution_scale` (also changed while the game runs), `readback_resolve` (all modes, with `readback_resolve_full_deferred` and `readback_resolve_cpu_pages_only`), `readback_memexport` (with `readback_memexport_fast`), occlusion queries (also `occlusion_query_full_counters`, as with `render_target_path_d3d12 = "rtv"`), tessellation, texture replacement, `async_shader_compilation`, and `store_shaders` (its pipelines go to `<title>.rtv.d3d11.xpso`, next to the shader file shared with the other backends, and are created at start-up).
+
+Known limits:
+
+- Render targets are always host render targets, like `render_target_path_d3d12 = "rtv"`; there is no `rov` path, so blending and formats are less exact in the games that need it.
+- On feature level 11.0, draws whose vertex shader writes memory (memexport) are skipped, with one log line per shader. Feature level 11.1 runs them. None of the checked games needs it so far.
+- Compressed textures (DXT, DXN) stay compressed, as on Direct3D 12, only when their width and height are multiples of 4 (2D and cube textures); 3D textures, other sizes, and the CTX1 and DXT3A formats are decompressed when loaded and take 4 to 8 times the video memory.
+- The GPU must give one 512 MB buffer for the console's memory; with `resolution_scale`, the scaled render target memory must also fit in 512 MB.
+
+To report a problem, add the backend name, the GPU, and a log with `d3d11_log_frames` set (and with `d3d11_debug` if the Graphics Tools Windows feature is installed).
+
+| Setting | Values | What it does |
+|---|---|---|
+| `d3d11_adapter` | -1 (auto), -2 (WARP), 0, 1, … | Which GPU to use, by DXGI adapter index. Auto prefers `gpu_vendor`, then the GPU with the most dedicated video memory. |
+| `d3d11_feature_level` | `""` (highest), `11_0`, `11_1` | Highest feature level to use. For testing how the backend behaves on older GPUs. |
+| `d3d11_optional_features` | `true` (default), `false` | `false` ignores the optional Direct3D 11.3 features the GPU reports, like GPUs without them. For testing. |
+| `d3d11_allow_variable_refresh_rate_and_tearing` | `true` (default), `false` | Allows G-Sync/FreeSync and tearing when `vsync = false`. |
+| `d3d11_block_compressed_textures` | `true` (default), `false` | Keeps DXT and DXN textures compressed in video memory when their size allows. `false` decompresses all of them (more video memory), to tell whether a texture problem comes from this. Read at start. |
+| `d3d11_shader_creation_threads` | -1 (default: 3/4 of the logical processors), 0, 1, … | Threads that create the game's shaders in the background with `async_shader_compilation` (`async_pipeline_wait_ms` and `async_depth_only_pipelines` apply as on Direct3D 12). 0 creates them when drawn, with a pause the first time. |
+
 ### Backend settings
 
 | Setting | Backend | Values | What it does |
@@ -59,7 +85,7 @@ Which one to use: Direct3D 12 is the default and usually the safer choice on Win
 | `vulkan_device` | Vulkan | -1 (auto), 0, 1, … | Which GPU to use, by Vulkan device index. |
 | `d3d12_pipeline_creation_threads`, `vulkan_pipeline_creation_threads` | D3D12, Vulkan | -1 (auto) to 32 | Threads that create pipelines in the background. |
 | `d3d12_pipeline_library` | D3D12 | `true` (default), `false` | Keeps the driver's compiled pipelines between runs (`shaders/local/*.pso_lib` in the cache folder). Later runs start faster and show fewer pauses or pop-in while pipelines are prepared. Specific to your GPU and driver: after a driver update it is rebuilt by itself. |
-| `vulkan_resolve_into_textures` | Vulkan | `false` (default), `true` | At `resolution_scale = 1` with `fbo`: an image the game renders and then samples (a 32-bit color surface without MSAA) is copied straight into its texture, instead of being loaded again from memory. Less GPU work in games that do this every frame; no effect at higher scales. Turn it off if colors or images look wrong. |
+| `vulkan_resolve_into_textures`, `d3d11_resolve_into_textures` | Vulkan, D3D11 | `false` (default), `true` | At `resolution_scale = 1` (Vulkan: with `fbo`): an image the game renders and then samples (a 32-bit color surface without MSAA) is copied straight into its texture, instead of being loaded again from memory. Less GPU work in games that do this every frame; no effect at higher scales. Turn it off if colors or images look wrong. |
 | `vulkan_hoist_shared_memory_uploads` | Vulkan | `false` (default), `true` | When the game rewrites vertex or index data in the middle of drawing, uploads it before the current batch of draws instead of interrupting the batch for each upload. Less GPU and CPU work in games that do this a lot (tens of thousands of times a second in racing games). Turn it off if geometry flickers or shows stale shapes. |
 | `gamma_render_target_as_unorm16` | D3D12, Vulkan | `true` (default), `false` | Stores the console's gamma render targets in 16 bits per channel instead of 8 bits: less banding in dark gradients. Fast render target paths (`rtv` / `fbo`); on Vulkan falls back to 8 bits if the GPU cannot blend that format. |
 | `d3d12_bindless` | D3D12 | `true` (default), `false` | Binds textures and buffers through one large descriptor table where the GPU supports it. Turn off only to test a driver problem. |
@@ -72,7 +98,8 @@ Which one to use: Direct3D 12 is the default and usually the safer choice on Win
 | `vulkan_allow_present_mode_fifo_latest_ready` | Vulkan | `false` (default), `true` | Where plain FIFO would be used (the three above off or unavailable), uses FIFO latest ready when the GPU and driver support it: still vsync without tearing, but each refresh shows the newest finished frame instead of the oldest queued one. Smoother and lower latency when the game's frame rate does not divide the display's refresh rate. |
 | `vulkan_max_frames_in_flight` | Vulkan | 0 (default: 3), 1 to 3 | How many frames the CPU may prepare ahead of the GPU. 2 lowers input latency and shortens waits in games that read rendered images back (`readback_resolve`); 1 lowers them more, but can cost frame rate when the GPU is the limit. |
 | `vulkan_render_target_trim_percent` | Vulkan | 0 (default: off), 1 to 100 | Frees the cached render targets the game is not using when video memory use reaches this percentage of what the driver allows, or after video memory ran out. Try 90 at high `resolution_scale` if long sessions end with missing textures, black pictures or a crash; each trim pauses the game for a moment. |
-| `vulkan_gpu_time` | Vulkan | `true` (default), `false` | In builds with performance counters (not Release): measures how long the graphics card works each frame, in total and by kind (draws, render target copies, resolves, texture loads, uploads, the swap), shown in the debug overlay and written to the `perf_log_csv` file. Read at start. |
+| `vulkan_integrated_memory_spill` | Vulkan | `true` (default), `false` | On laptops and handhelds whose GPU has only a small slice of RAM reserved for it (often 512 MB, set in the BIOS), puts textures in ordinary system memory and keeps the reserved slice at most half full. Fixes black textures and "device lost" crashes there. No effect on graphics cards with their own memory. Its log line at start (`Vulkan memory heaps: ...`) says whether it applies. With it, also set `vulkan_render_target_trim_percent = 90`. |
+| `vulkan_gpu_time`, `d3d11_gpu_time` | Vulkan, D3D11 | `true` (default), `false` | In builds with performance counters (not Release): measures how long the graphics card works each frame, in total and by kind (draws, render target copies, resolves, texture loads, uploads, the swap), shown in the debug overlay and written to the `perf_log_csv` file. Read at start. |
 
 **Tearing on Vulkan with `vsync = true`.** On Vulkan, `vsync` only paces the game; the swapchain still uses the immediate present mode when the driver offers it, which allows tearing (for lower latency and G-Sync/FreeSync). If you see tearing lines, set:
 
@@ -86,6 +113,7 @@ The presenter then uses mailbox (no tearing, low latency) or, without mailbox, F
 |---|---|---|
 | `async_shader_compilation` | `true` (default), `false` | Compiles shaders in background threads: less stutter, but objects can be missing for a moment the first time they appear. |
 | `async_pipeline_wait_ms` | 0 (default: never waits), 1 to 100 ms | With `async_shader_compilation`, how long a draw waits for its pipeline before it is skipped. 2 to 8 ms keep objects from popping in when their pipeline is ready quickly, at the cost of short pauses the first time new objects appear. Mostly matters on the first run, before the pipeline caches are filled. |
+| `async_depth_only_pipelines` | `false` (default), `true` | With `async_shader_compilation`, also prepares depth-only pipelines (shadows, depth pre-passes) in the background. Removes rare long pauses when one is new to the graphics driver, but shadows or whole objects can be missing until it is ready. |
 | `store_shaders` | `true` (default), `false` | Keeps compiled shaders on disk, so later runs stutter less. |
 | `vsync` | `true` (default), `false` | Paces the game to the display. Many games tie their speed to vsync: with `false` they can run too fast. |
 | `fullscreen`, `fullscreen_exclusive` | `true` / `false` | Start in fullscreen; exclusive switches the display mode instead of borderless. |
@@ -126,7 +154,8 @@ The defaults suit most games. A title's own settings file usually sets the ones 
 | `readback_resolve_log` | `false` (default), `true` | Logs which images are copied back, which are skipped, and when the game first reads one (for diagnosing a game's `readback_resolve` needs). |
 | `readback_resolve_half_pixel_offset` | `false` (default), `true` | With `resolution_scale` and `readback_resolve`, the CPU gets the center sample of each scaled pixel block instead of its top-left one. Can help thin lines and edges in data the game reads back (gamma correction, visibility checks). |
 | `readback_memexport` | `true` (default), `false` | Copies data that GPU shaders write to memory back to the CPU. Some games need it (distant textures in Fuse). `false` is a little faster where a game does not need it. The older `d3d12_readback_memexport` / `vulkan_readback_memexport`, when set, override it on their backend. |
-| `readback_memexport_fast` | `true` (default), `false` | Uses a faster double-buffered copy for `readback_memexport` when possible, with a fallback to the exact one. |
+| `readback_memexport_fast` | `true` (default), `false` | Uses a faster double-buffered copy for `readback_memexport` when possible, with a fallback to the exact one. Only `false` keeps what the CPU wrote to the exported range during the draw: it writes back just the bytes the draw changed. |
+| `render_target_reuse` | `true` (default), `false` | When a surface moves to a new EDRAM base, reuses an idle render target of the same shape instead of allocating another one, so video memory does not keep growing. Turn off if surfaces show wrong content on Direct3D 12, Vulkan or Direct3D 11. |
 | `clear_memory_page_state` | `false` (default), `true` | Rechecks at the end of each frame which memory the GPU wrote. `true` fixes stale textures or missing models in games that read back what the GPU wrote (as in Team Ninja games), but re-uploads that memory every frame (up to gigabytes a second in heavy games). |
 | `depth_bias_shader_offset` | `false` (default), `true` | Draws decals with depth bias in the shader. Fixes flickering decals and shadows (Z-fighting) in games that use very small depth bias values; small GPU cost. |
 | `texture_point_snap` | `false` (default), `true` | Snaps point-sampled texture coordinates to texel centers. Fixes texture seams in games with virtual textures; can break other games. |
@@ -159,6 +188,9 @@ For bug reports and development; they slow the game down. Leave them at their de
 |---|---|---|
 | `d3d12_debug` | D3D12 | Turns on the Direct3D 12 and DXGI debug layer (needs the Graphics Tools Windows feature). Its messages go to the log. |
 | `d3d12_break_on_error`, `d3d12_break_on_warning` | D3D12 | With `d3d12_debug`, stops in the debugger on a validation error or warning. |
+| `d3d11_debug` | D3D11 | Turns on the Direct3D 11 debug layer (needs the Graphics Tools Windows feature). Its messages go to the log after each presented frame. |
+| `d3d11_debug_white_textures` | D3D11 | Puts plain white textures in place of all the game's textures, to tell a texture problem from a drawing problem. For checking the backend only. |
+| `d3d11_log_frames` | D3D11 | Logs, for the first this many frames, how many draws and resolves the backend did, how many textures it bound and which image it showed. For reporting a black or wrong picture. |
 | `d3d12_dred` | D3D12 | When the graphics card drops the game ("device removed"), logs the last GPU operations and the faulting address, without the debug layer. Small cost; turn on to report a GPU crash. |
 | `vulkan_log_debug_messages` | Vulkan | Logs messages of the Vulkan validation layers when they are enabled (default `true`). |
 | `vulkan_validation_enabled` | Vulkan | Turns on the Vulkan validation layers (the Vulkan SDK must be installed). |
@@ -168,7 +200,7 @@ For bug reports and development; they slow the game down. Leave them at their de
 | `d3d12_dxbc_disasm`, `d3d12_dxbc_disasm_dxilconv` | D3D12 | Writes the disassembly of translated shaders to the log. |
 | `spirv_disable_rounding_mode_rte` | Vulkan | Leaves the round-to-nearest-even capability out of translated shaders, so RenderDoc can debug them (it does not support it). |
 | `dxbc_source_map` | D3D12 | Adds the original console shader code to translated shaders as comments, for reading them in a debugger. |
-| `d3d12_tessellation_wireframe`, `vulkan_tessellation_wireframe` | D3D12, Vulkan | Draws tessellated geometry as wireframe. |
+| `d3d12_tessellation_wireframe`, `vulkan_tessellation_wireframe`, `d3d11_tessellation_wireframe` | D3D12, Vulkan, D3D11 | Draws tessellated geometry as wireframe. |
 
 ## Advanced: leave at defaults
 
