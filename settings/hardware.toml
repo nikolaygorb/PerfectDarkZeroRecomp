@@ -92,6 +92,10 @@ dev_debug_runtime = false
 # Ported xenia-canary game-patches for PDZ retail (4D5307D3).
 # https://github.com/xenia-canary/game-patches/blob/main/patches/4D5307D3%20-%20Perfect%20Dark%20Zero.patch.toml
 pdz_fps60_unlock = true
+
+# Skip startup movies and disable the idle title-screen demo.
+# Set false to restore both; mission cinematics are unaffected.
+pdz_skip_intro = true
 pdz_aspect_ratio_16_9 = false
 
 # Vertical FoV before aiming/zoom. Original: 58; range: 40-120.
