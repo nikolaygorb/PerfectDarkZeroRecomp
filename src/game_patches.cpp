@@ -19,6 +19,42 @@
 #include "game_constants.h"
 #include "game_patches.h"
 
+REX_EXTERN(__imp__sub_823975C0);
+REX_HOOK_RAW(sub_823975C0)
+{
+  // Only front-end intro/attract requests. Keep native initialization,
+  // null-movie completion and title transitions; mission movies are untouched.
+  const bool startup = (ctx.lr == 0x826173CC && ctx.r3.u32 == 0x820CD6D4) ||
+                       (ctx.lr == 0x822262B4 &&
+                        (ctx.r3.u32 == 0x82098800 || ctx.r3.u32 == 0x8209881C));
+  if (REXCVAR_GET(pdz_skip_intro) && startup &&
+      REX_LOAD_U32(0x82E2E794) == 0)
+  {
+    REXLOG_INFO("Skip intro: bypassing startup movie {:08X}", ctx.r3.u32);
+    ctx.r3.u64 = 0;
+    return;
+  }
+  __imp__sub_823975C0(ctx, base);
+}
+
+REX_EXTERN(__imp__sub_823C6360);
+REX_HOOK_RAW(sub_823C6360)
+{
+  // DarkXuiStartAttract's timer starts the demonstration after the title
+  // screen is idle. Keep PRESS START waiting for real input when intro
+  // skipping is enabled; preserve all other scene/input messages.
+  const uint32_t message = ctx.r4.u32;
+  if (REXCVAR_GET(pdz_skip_intro) && message &&
+      REX_LOAD_U32(message + 4) == 39) {
+    const uint32_t timer = REX_LOAD_U32(message + 16);
+    if (timer && REX_LOAD_U32(timer) == 1235) {
+      ctx.r3.u64 = 0;
+      return;
+    }
+  }
+  __imp__sub_823C6360(ctx, base);
+}
+
 namespace game_patches
 {
   bool IsEnabled(PatchId patch)

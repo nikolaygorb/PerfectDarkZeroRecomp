@@ -11,6 +11,9 @@ REXCVAR_DEFINE_DOUBLE(pdz_fov, GameConstants::PatchConstants::kFovOriginal, "Gam
     .range(GameConstants::PatchConstants::kFovMin, GameConstants::PatchConstants::kFovMax)
     .lifecycle(rex::cvar::Lifecycle::kHotReload);
 
+REXCVAR_DEFINE_BOOL(pdz_skip_intro, true, "Gameplay",
+                    "Skip startup movies and the idle title-screen demo (next launch)");
+
 REXCVAR_DEFINE_BOOL(pdz_fps60_unlock, false, "Gameplay",
                     "Unlock 60 FPS");
 

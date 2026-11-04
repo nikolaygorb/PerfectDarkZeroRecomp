@@ -205,3 +205,11 @@ with its declaration in [`src/game_cvars.h`](../src/game_cvars.h). Project
 cvars register at static-init time, so they load with the first config pass.
 Define future project-specific toggles there, read them with
 `REXCVAR_GET(name)`, and document them in this table.
+
+## Startup movies
+
+`pdz_skip_intro = true` in `hardware.toml` skips the startup splash movies
+and keeps the title screen waiting for input instead of starting its idle demo.
+Set it to `false` before launching to restore the original startup and demo.
+Mission cinematics are unaffected. The setting is also exposed under Gameplay
+in the F4 Settings overlay; use **Save to config** to keep changes for the next launch.
