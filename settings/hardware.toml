@@ -4,14 +4,14 @@
 # src/perfectdarkzerorecomp_app.h) and rewritten by the in-game Settings
 # overlay's "Save to config" button. --flag on the command line and REX_*
 # environment variables always override values from this file - see
-# ../settings/README.md.
+# README.md in this folder. Every GPU option is described in faq.md.
 #
 # Flat key = value only
 
 gpu_plugin = "xenos"
 
 # "any" (d3d12 - win default, vulkan - lin default)
-# "d3d11" / "d3d12" / "vulkan"
+# "d3d11" (experimental) / "d3d12" / "vulkan"
 graphics_backend = "any"
 vsync = true
 resolution_scale = 2
@@ -20,12 +20,11 @@ present_fsr_sharpness_reduction = 0.2
 present_dither = true
 swap_post_effect = "smaa"
 async_shader_compilation = true
-native_2x_msaa = false
+native_2x_msaa = true
 anisotropic_override = 5
 
 texture_cache_memory_limit_soft = 1024
 texture_cache_memory_limit_hard = 4096
-clear_memory_page_state = false
 readback_memexport = false
 readback_memexport_fast = false
 readback_resolve = "none"
@@ -33,6 +32,7 @@ host_present_from_non_ui_thread	= true
 gpu_allow_invalid_fetch_constants = true
 depth_bias_shader_offset = true
 async_depth_only_pipelines = true
+shared_memory_skip_unchanged_uploads = true
 
 window_width = 1920
 window_height = 1080
@@ -41,6 +41,7 @@ monitor = 0
 resolution = "1920x1080"
 
 render_target_path_d3d12 = "rtv"
+render_target_path_vulkan = "fbo"
 store_shaders = true
 present_letterbox = true
   
@@ -58,20 +59,17 @@ d3d12_submit_on_primary_buffer_end = true
 d3d12_tessellation_wireframe = false
 d3d12_readback_resolve = false
 
-render_target_path_vulkan = "fbo"
 vulkan_log_debug_messages = false
 vulkan_allow_present_mode_immediate = false
 vulkan_allow_present_mode_fifo_relaxed = false
 vulkan_allow_present_mode_mailbox = true
 vulkan_async_skip_incomplete_frames = false
-vulkan_force_convert_quad_lists_to_triangle_lists = true
 vulkan_hoist_shared_memory_uploads = true
 vulkan_max_frames_in_flight = 2
 vulkan_allow_present_mode_fifo_latest_ready = true
 vulkan_resolve_into_textures = true
 
 d3d11_adapter = -1
-d3d11_feature_level = "11_0"
 d3d11_block_compressed_textures = true
 d3d11_resolve_into_textures = false
 d3d11_debug = false

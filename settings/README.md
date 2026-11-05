@@ -1,14 +1,17 @@
 # Settings
 
 Two hand-authored, checked-in config files that the `perfectdarkzerorecomp`
-binary loads automatically at startup, plus a downloaded controller mapping
-database and this README.
+binary loads automatically at startup, a downloaded controller mapping
+database, this README, and reference pages copied from the SDK's `docs/`.
 
 | File | Covers |
 |---|---|
-| [`hardware.toml`](hardware.toml) | Renderer/backend, window, vsync, resolution, debug output, gameplay patches, language, local split-screen players |
-| [`mapping.toml`](mapping.toml) | Input backend selection (gamepad/keyboard+mouse) |
+| [`hardware.toml`](hardware.toml) | Renderer/backend, image quality, window, vsync, resolution, debug output, gameplay patches, language, local split-screen players |
+| [`mapping.toml`](mapping.toml) | Input backend, keyboard and mouse, native mouse look, key bindings |
 | [`gamecontrollerdb.txt`](gamecontrollerdb.txt) | SDL gamepad mappings for controllers it doesn't already recognize - not hand-authored, see below |
+| [`faq.md`](faq.md) | Every SDK graphics option (copy of the SDK's `graphics-options.md`) |
+| [`split-screen.md`](split-screen.md) | Split-screen players and device assignment (copy of the SDK page) |
+| [`texture-replacement.md`](texture-replacement.md), [`gpu-traces.md`](gpu-traces.md) | HD texture packs and GPU frame traces, linked from `faq.md` (copies of the SDK pages) |
 
 Split in two on purpose: rendering/perf tweaks and input tweaks are separate
 concerns you'll want to touch independently, and both stay tiny because
@@ -82,6 +85,11 @@ overlays exist), so a key added to `mapping.toml` for one of those would
 silently have no effect. Rebind those from the in-game Settings overlay
 instead - that persists through the same save mechanism described above.
 
+The project's own hotkeys are the exception: `bind_third_person` (V),
+`bind_fov_settings` (F6) and `bind_local_profiles` (F9) are registered in
+`OnCreateDialogs()`, before `OnPostSetup()` reloads the settings files, so
+they can be rebound from `mapping.toml`.
+
 ## Keyboard, mouse, and gamepad all work at once
 
 The SDK always merges every input device assigned to a guest player rather
@@ -94,13 +102,11 @@ slot. So there's no "backend" to choose between keyboard and gamepad the way
 turning the keyboard/mouse side on or off, independent of whatever pad is
 also plugged in.
 
-Per-action keybinds (`keybind_a`, `keybind_lstick_up`, ...) already ship with
-sensible WASD-style defaults and aren't repeated in `mapping.toml` -
-add any of them the same way as everything else here if you want to rebind
-one. The full list isn't in the headers vendored under `rexglue/win-amd64`
-(source-only, defined in the SDK's `mnk_input_driver.cpp`) - the easiest way
-to see every current default is `rex::cvar::SerializeToTOML()`'s dump, or the
-in-game Settings overlay's control rebinding screen.
+Per-action keybinds (`keybind_a`, `keybind_lstick_up`, ...) are listed in
+`mapping.toml` with their WASD-style defaults - edit any of them there to
+rebind it. They are defined in the SDK's
+`thirdparty/rexglue-sdk/src/input/mnk/mnk_input_driver.cpp`; the in-game
+Settings overlay's control rebinding screen shows the current values too.
 
 ## `hardware.toml` reference
 
@@ -110,12 +116,15 @@ build actually ships with), not the SDK's compiled-in default.
 | Key | Type | Default | Effect |
 |---|---|---|---|
 | `gpu_plugin` | string | `"xenos"` | GPU emulation plugin to load. Set here rather than on the command line now - see root [README](../README.md#run). A `--gpu_plugin` flag would still override this file if you ever needed a different plugin. |
-| `graphics_backend` | string | `"any"` | Graphics API backend: `"any"` (D3D12 first when both are compiled in), `"d3d12"`, or `"vulkan"`. Project-defined cvar (not from the SDK), wired up in `OnPreSetup()` in [`src/perfectdarkzerorecomp_app.h`](../src/perfectdarkzerorecomp_app.h) - it loads the plugin itself with the requested backend before the SDK's own auto-load (which only ever requests `"any"`) runs. Falls back to automatic selection with a warning if the requested backend isn't compiled into `rexgpu-xenos`. |
+| `graphics_backend` | string | `"any"` | Graphics API backend: `"any"` (D3D12 first when both are compiled in), `"d3d12"`, `"vulkan"`, or `"d3d11"` (experimental, Windows, never picked by `"any"`; see [`faq.md`](faq.md#direct3d-11-experimental)). Project-defined cvar (not from the SDK), wired up in `OnPreSetup()` in [`src/perfectdarkzerorecomp_app.h`](../src/perfectdarkzerorecomp_app.h) - it loads the plugin itself with the requested backend before the SDK's own auto-load (which only ever requests `"any"`) runs. Falls back to automatic selection with a warning if the requested backend isn't compiled into `rexgpu-xenos`. |
 | `vsync` | bool | `true` | Vertical sync. |
 | `resolution_scale` | int | `2` | Internal render-target supersampling, independent of window/guest resolution. |
 | `async_shader_compilation` | bool | `true` | Compile shaders on a background thread instead of blocking the render thread - reduces hitches when new shaders are first seen. |
-| `native_2x_msaa` | bool | `false` | Native 2x MSAA on the emulated render targets. |
-| `anisotropic_override` | int | `5` | Forces anisotropic texture filtering to this level (e.g. `16`); `0` leaves the game's own setting alone. |
+| `native_2x_msaa` | bool | `true` | Native 2x MSAA on the emulated render targets. |
+| `anisotropic_override` | int | `5` | Forces anisotropic texture filtering, `-1` to `5`; `5` = 16x (SDK default `3` = 4x). |
+| `present_effect` | string | `"fsr"` | How the image is scaled to the window: `bilinear`, `cas`, `fsr`, `nis`. `present_fsr_sharpness_reduction` (`0.2`) sets FSR sharpening. |
+| `present_dither` | bool | `true` | Dithers the final image against banding. |
+| `swap_post_effect` | string | `"smaa"` | Anti-aliasing on the final image: `none`, `fxaa`, `fxaa_extreme`, `smaa`. |
 | `window_width` / `window_height` | int | `1920` / `1080` | Host window size. |
 | `fullscreen` | bool | `true` | Host window fullscreen. |
 | `monitor` | int | `0` | Host monitor index for fullscreen. |
@@ -128,8 +137,20 @@ build actually ships with), not the SDK's compiled-in default.
 | `user_language` | int | `1` | Game language: `1` English, `3` German, `4` French. SDK cvar, applied by a hook in [`src/game_patches.cpp`](../src/game_patches.cpp) because the SDK's `XGetLanguage` ignores it. Languages missing from `loc/` fall back to English. Restart after changing it. |
 | `pdz_gpu_wait_mode` | int | `1` | How the game's GPU wait loop idles: `0` busy spin (original), `1` yield the core, `2` sleep 200 µs. Hook in `src/render/`. |
 | `pdz_tp_enable` | bool | `false` | Start in third person; toggled in game with `bind_third_person` (V). Offset keys `pdz_tp_offset_x` / `_y` / `_z` (`-80.0` / `10.0` / `-320.0`) are described in [`src/mod/README.md`](../src/mod/README.md). |
-| `max_local_users` | int | `2` | Local split-screen players that can be signed in, 1 to 4. The shipped value is `2`; the SDK default is `1` (single player). SDK cvar, see [Split-screen](#split-screen). |
+| `max_local_users` | int | `4` | Local split-screen players that can be signed in, 1 to 4. The shipped value is `4`; the SDK default is `1` (single player). SDK cvar, see [Split-screen](#split-screen). |
 | `keyboard_own_player` | bool | `false` (commented out) | Keyboard and mouse are player 1 on their own and gamepads start at player 2. Shipped commented out in `hardware.toml`; uncomment to use. See [Split-screen](#split-screen). |
+
+The rest of `hardware.toml` (texture cache limits, `readback_*`,
+`render_target_path_*`, `shared_memory_skip_unchanged_uploads`, `d3d12_*`,
+`vulkan_*`, `d3d11_*`, `log_level`, ...) are SDK GPU and debug settings, all
+described in [`faq.md`](faq.md). `dev_debug_runtime` is described in the root
+README's development notes.
+
+`native_memory` (bool, default `true`, not listed in `hardware.toml`) runs the
+game's `memcpy`, `memset` and `memmove` as host code. It is defined by
+`REX_NATIVE_MEMORY_HOOKS` in
+[`src/render/native_memory_hook.cpp`](../src/render/native_memory_hook.cpp);
+set it to `false` to rule it out when chasing a bug.
 
 The source Xenia patch file also contains a "Bottomless Clip" patch. It is
 not ported yet, so there is no corresponding cvar in this project.
@@ -138,12 +159,13 @@ not ported yet, so there is no corresponding cvar in this project.
 
 Perfect Dark Zero has local split-screen, and the runtime can sign in several
 local players the way a console does when another person picks up a
-controller. `hardware.toml` ships with `max_local_users = 2`, so two players
-work out of the box:
+controller. `hardware.toml` ships with `max_local_users = 4`, so up to four
+players work out of the box:
 
 - Player 1: keyboard and mouse plus gamepad 1.
-- Player 2: gamepad 2, signed in when that gamepad is connected (and signed out
-  when it is removed). The game sees the usual sign-in change notification.
+- Players 2 to 4: gamepads 2 to 4, each signed in when that gamepad is
+  connected (and signed out when it is removed). The game sees the usual
+  sign-in change notification.
 - Each player keeps their own in-game options (look inversion, sensitivity,
   button layout) in a per-player profile folder; save games are shared and kept
   under player 1.
@@ -151,15 +173,15 @@ work out of the box:
 Common setups, all in `hardware.toml`:
 
 ```toml
-# Two gamepads (default as shipped)
+# Up to four players, one gamepad each (default as shipped)
+max_local_users = 4
+
+# Two gamepads
 max_local_users = 2
 
 # One gamepad: keyboard and mouse against the pad
 max_local_users = 2
 keyboard_own_player = true
-
-# Up to four players, one gamepad each
-max_local_users = 4
 ```
 
 Beyond this, `input_player1` / `input_player2` pick devices explicitly and
@@ -179,20 +201,26 @@ game itself decides how split-screen looks and when it accepts new players.
 | `guide_button` | bool | `true` | Whether the controller Guide/PS button is routed to the guest. |
 | `mnk_mode` | bool | `true` | Enables keyboard-as-controller input, merged in alongside any physical gamepad (see below). |
 | `mnk_mouse` | bool | `true` | Routes mouse movement to the right stick when `mnk_mode` is on. Off means the right stick only comes from the `keybind_rstick_*` keys. |
-| `mnk_sensitivity` | double | `1.0` | Mouse sensitivity for the right stick, range `0.01`-`10.0`. With `pdz_mouse_look` on it only applies where native mouse look doesn't run (menus, cutscenes, vehicles). |
+| `mnk_sensitivity` | double | `5.0` | Mouse sensitivity for the right stick, range `0.01`-`10.0` (SDK default `1.0`). With `pdz_mouse_look` on it only applies where native mouse look doesn't run (menus, cutscenes, vehicles). |
+| `right_stick_deadzone_percentage` | double | `0.2` | Dead zone on the right stick, as a fraction of its range (SDK default `0.0`). |
 | `pdz_mouse_look` | bool | `true` | Native mouse look: on foot the mouse turns the camera directly, skipping the game's stick dead zone, response curve and acceleration (aim assist still applies). Hook in [`src/mouse/mouse_look_hook.cpp`](../src/mouse/mouse_look_hook.cpp). Needs `mnk_mode` and `mnk_mouse`. |
 | `pdz_mouse_sensitivity` | double | `2.0` | Native mouse look: camera turn per mouse count = 0.022 deg x this. Range `0.01`-`100.0`. Independent of the in-game sensitivity option. |
 | `pdz_mouse_invert_x` / `pdz_mouse_invert_y` | bool | `false` | Invert native mouse look axes. The in-game Invert option doesn't apply to it. |
 | `pdz_mouse_zoom_scaling` | bool | `true` | Scale native mouse look by `tan(fov/2) / tan(pdz_fov/2)` while zoomed, so the picture moves under the mouse at the same rate. |
 | `pdz_mouse_zoom_sensitivity` | double | `1.0` | Extra factor on native mouse look while zoomed in. |
+| `keybind_*` | string | WASD layout | Keyboard and mouse keys for each controller button and stick direction, see above. |
+| `bind_third_person` | string | `"V"` | Toggle the third-person camera (`pdz_tp_*`). |
+| `bind_fov_settings` | string | `"F6"` | Toggle the field of view slider (`pdz_fov`). |
+| `bind_local_profiles` | string | `"F9"` | Toggle the local profile list. Not listed in `mapping.toml`; add it to rebind. |
+
 Gamepad button layout itself (DualShock 4, DualSense, Xbox, Switch Pro, ...)
 isn't a setting here - SDL auto-detects the controller and maps it to the
 Xbox 360 layout the game expects.
 
 ## Adding more cvars
 
-Any cvar declared with `REXCVAR_DECLARE` under
-`rexglue/win-amd64/include/rex/**/flags.h` can be added the same way: pick
+Any SDK cvar (`REXCVAR_DEFINE_*` under `thirdparty/rexglue-sdk/src/`, most
+GPU ones listed in [`faq.md`](faq.md)) can be added the same way: pick
 the file matching its concern (hardware vs. input), add `key = value`. If it
 needs to apply before the window/overlays exist (true for everything
 currently listed), it belongs in one of these two files loaded from

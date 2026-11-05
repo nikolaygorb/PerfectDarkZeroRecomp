@@ -9,7 +9,9 @@ The code is in `third_person.cpp`.
 Press **V** to switch between first and third person. To use another key,
 change `bind_third_person` in `settings/mapping.toml`.
 
-Settings in `settings/hardware.toml` (all can be changed live from the F4 overlay):
+Settings for `settings/hardware.toml` (all can be changed live from the F4
+overlay; `hardware.toml` ships with `pdz_tp_enable` and the offsets, add the
+others to change them):
 
 | Setting | Default | What it does |
 |---|---|---|
@@ -18,6 +20,10 @@ Settings in `settings/hardware.toml` (all can be changed live from the F4 overla
 | `pdz_tp_zoom_mode` | `2` | What happens when zoomed: `0` stays behind the player, `1` goes first person, `2` slides forward |
 | `pdz_tp_binoculars_fp` | `false` | Use first person while looking through the binoculars |
 | `pdz_tp_auto_fp_gadgets` | `true` | Use first person while hacking with the Data Thief |
+
+This folder also holds the field of view slider (`fov_settings.cpp`, F6,
+`pdz_fov`); see the root [README](../../README.md#field-of-view).
+
 ## How it works
 
 - **The gameplay camera.** It is camera mode 0, updated by `sub_8220D9C8`. It

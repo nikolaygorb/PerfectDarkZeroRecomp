@@ -24,7 +24,8 @@ Target retail release:
 ## Status
 
 - Fully playable on Windows and Linux: video, audio, gameplay, achievements and saves.
-- Keyboard and mouse support.
+- Keyboard and mouse support, with native mouse look (`pdz_mouse_*` in
+  `mapping.toml`).
 - Local split-screen for 4 players out of the box (`max_local_users = 4`), up
   to 4 players with gamepads. Keyboard and mouse can be one of the players, see
   [Split-screen](#split-screen).
@@ -57,8 +58,8 @@ Target retail release:
    cmake --build --preset win-amd64-release
    ```
 
-   There are also Linux and macOS presets (`linux-amd64-*`, `mac-*`), but only
-   Windows is tested. Codegen (`default.xex` → `generated/`) runs automatically
+   There are also Linux, macOS and ARM64 presets (`linux-amd64-*`,
+   `win-arm64-*`, `linux-arm64-*`, `mac-*`). Codegen (`default.xex` → `generated/`) runs automatically
    as part of the build.
 
 ## Run
@@ -100,7 +101,7 @@ Only languages your copy of the game includes will work (check
 
 ### Split-screen
 
-Set `max_local_users` in `hardware.toml` (1 to 4; the file ships with `2`).
+Set `max_local_users` in `hardware.toml` (1 to 4; the file ships with `4`).
 Player 1 uses keyboard and mouse plus gamepad 1, player 2 signs in when a
 second gamepad is connected, and players 3 and 4 follow with gamepads 3 and 4.
 
@@ -135,15 +136,21 @@ Most can also be changed in game from the F4 overlay.
 
 | File | What it covers |
 |---|---|
-| `hardware.toml` | renderer, window, patches (`pdz_fps60_unlock`, `pdz_aspect_ratio_16_9`), field of view (`pdz_fov`), `pdz_gpu_wait_mode`, third-person camera (`pdz_tp_*`), language (`user_language`), split-screen (`max_local_users`, `keyboard_own_player`) |
-| `mapping.toml` | input backend, keyboard and mouse (`mnk_*`), key bindings including `bind_third_person` and `bind_fov_settings` |
+| `hardware.toml` | renderer (`graphics_backend`: `any`, `d3d12`, `vulkan`, `d3d11` experimental), image quality, window, patches (`pdz_fps60_unlock`, `pdz_aspect_ratio_16_9`), field of view (`pdz_fov`), `pdz_gpu_wait_mode`, third-person camera (`pdz_tp_*`), language (`user_language`), split-screen (`max_local_users`, `keyboard_own_player`) |
+| `mapping.toml` | input backend, keyboard and mouse (`mnk_*`), native mouse look (`pdz_mouse_*`), key bindings including `bind_third_person` and `bind_fov_settings` |
+
+Every graphics option of the SDK is described in
+[`settings/faq.md`](settings/faq.md); split-screen in
+[`settings/split-screen.md`](settings/split-screen.md).
 
 ## Development notes
 
 - Set `dev_debug_runtime = true` to stub every unknown function and log
   missing ones to `logs/stub_sweep.txt` and `logs/missed_functions.txt`.
-- Game-specific hooks are in `src/`: patches, the GPU wait hook in `render/`,
-  high-FPS physics and cutscene timing in `timing/`, and the camera mod in `mod/`.
+- Game-specific hooks are in `src/`: patches, the GPU wait hook and native
+  `memcpy`/`memset`/`memmove` (`native_memory`, on by default) in `render/`,
+  mouse look in `mouse/`, high-FPS physics and cutscene timing in `timing/`,
+  the camera and FoV mods in `mod/`, and local profiles in `local_profiles.cpp`.
 
 ## Credits
 

@@ -3,7 +3,7 @@
 #include "game_constants.h"
 
 REXCVAR_DEFINE_STRING(graphics_backend, "any", "GPU",
-                      "Graphics API backend: any, d3d12, vulkan")
+                      "Graphics API backend: any, d3d12, vulkan, d3d11 (experimental)")
     .allowed({"any", "d3d12", "d3d11", "vulkan"});
 
 REXCVAR_DEFINE_DOUBLE(pdz_fov, GameConstants::PatchConstants::kFovOriginal, "Gameplay",
