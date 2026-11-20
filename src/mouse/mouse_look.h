@@ -11,6 +11,7 @@
 #include <rex/ui/window.h>
 #include <rex/ui/window_listener.h>
 
+#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <functional>
@@ -58,6 +59,28 @@ namespace pdz::mouse
     // turn (zoom).
     std::optional<Turn> Consume(double extra_scale);
 
+    // Steering something else than the player's view (steer_look.cpp; from PerfectDarkZeroRestored
+    // src/mod/mouse_look.cpp): keeps the pointer claimed; the motion is kept for TakeSteerStick, or left
+    // pending for ConsumeSteer when direct.
+    void ConsumeForSteering(bool direct);
+    // Direct steering (a mounted turret): the mouse turn since the last call.
+    Turn ConsumeSteer(double extra_scale);
+    // The mouse as a right stick, x / y in -1..1 (y + = up), smoothed; zero when steering is false.
+    struct SteerStick
+    {
+      double x = 0.0, y = 0.0;
+    };
+    SteerStick TakeSteerStick(bool steering);
+
+    // Raw mouse motion since the last call, whoever owns the pointer (the Locktopus).
+    void TakeRawMotion(double &dx, double &dy);
+
+    // An ImGui overlay wants the mouse.
+    bool OverlayActive() const;
+
+    // The menu pointer (menu_pointer.cpp) wants a free, visible cursor: mnk is not given the mouse back.
+    void SetMenuPointer(bool active);
+
     // rex::ui::WindowInputListener
     void OnMouseMove(rex::ui::MouseEvent &e) override;
 
@@ -84,8 +107,13 @@ namespace pdz::mouse
 
     UiTask BeginReleaseLocked();
     UiTask BeginEngageLocked();
+    // The claim's state machine (idle -> handoff -> engaging -> engaged); true when engaged.
+    bool AdvanceClaimLocked(Clock::time_point now, UiTask &task);
     Turn TakeTurnLocked(double extra_scale);
+    static Turn TurnFromCounts(double dx, double dy, double extra_scale);
     bool OverlayWantsMouse() const;
+    // Hands the mouse back to mnk unless the menu pointer keeps it free.
+    void GiveBackToMnk();
 
     // Call without mu_ held.
     void Post(UiTask task);
@@ -108,6 +136,11 @@ namespace pdz::mouse
 
     double pending_dx_ = 0.0;
     double pending_dy_ = 0.0;
+    // ConsumeForSteering / TakeSteerStick: motion kept for the steered thing and its smoothed speed.
+    double steer_dx_ = 0.0, steer_dy_ = 0.0, steer_vx_ = 0.0, steer_vy_ = 0.0;
+    Clock::time_point last_stick_{};
+    double raw_dx_ = 0.0, raw_dy_ = 0.0;
+    std::atomic<bool> menu_pointer_{false};
 
     std::thread watchdog_;
     std::condition_variable watchdog_cv_;

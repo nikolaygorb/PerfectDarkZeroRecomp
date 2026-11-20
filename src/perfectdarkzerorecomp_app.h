@@ -11,7 +11,6 @@
 #include <rex/memory/utils.h>
 #include <rex/rex_app.h>
 #include <rex/runtime.h>
-#include <rex/system/gpu_plugin.h>
 
 #include "debug_tools.h"
 #include "game_cvars.h"
@@ -19,7 +18,10 @@
 #include "local_profiles.h"
 #include "mod/fov_settings.h"
 #include "mod/third_person.h"
+#include "mouse/locktopus_input.h"
+#include "mouse/menu_pointer.h"
 #include "mouse/mouse_look.h"
+#include "render/graphics_backend.h"
 #include "utils.h"
 
 #ifdef REXGLUE_ENABLE_PERF_COUNTERS
@@ -40,16 +42,7 @@ public:
 
   void OnPreSetup(rex::RuntimeConfig &config) override
   {
-    std::string backend = REXCVAR_GET(graphics_backend);
-    if (backend != "any" && !config.gpu_plugin.empty())
-    {
-      config.graphics = rex::system::LoadGpuPlugin(config.gpu_plugin, backend);
-      if (!config.graphics)
-      {
-        REXLOG_WARN("graphics_backend '{}' unavailable, falling back to automatic selection",
-                    backend);
-      }
-    }
+    graphics_backend::Select(config);
   }
 
   // void OnLoadXexImage(std::string& xex_image) override {}
@@ -67,6 +60,8 @@ public:
     fov_settings::Init(drawer);
     pdz::mouse::MouseLook::Get().Attach(window(), drawer, [this]
                                         { return HasInteractiveOverlay(); });
+    menu_pointer::Attach(window());
+    locktopus_input::Attach(window());
   }
 
   bool HasAppOverlay() const override

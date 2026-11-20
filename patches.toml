@@ -1,0 +1,79 @@
+# Mid-function hooks for the recompiler (included from perfectdarkzerorecomp_manifest.toml).
+# Each entry calls a C++ function just before the instruction at `address`; with
+# jump_address_on_true the code jumps there when it returns true. Changing this file re-runs codegen.
+
+# --- src/fixes/tu_fixes.cpp: Title Update 3 fixes.
+# From PerfectDarkZeroRestored (MIT) midasm_hooks.toml; launch addresses, TU3 targets in comments.
+
+# U7: Datacore script null check on +2592 (TU3 822FFDC8).
+[[midasm_hook]]
+address = 0x822F89A0
+name = "PdzTuDatacoreNull"
+registers = ["r31"]
+jump_address_on_true = 0x822F8CDC
+
+[[midasm_hook]]
+address = 0x822F8D64
+name = "PdzTuDatacoreNull"
+registers = ["r31"]
+jump_address_on_true = 0x822F8F98
+
+# U8: bot task null checks on +76 (TU3 821C1A88 / 821C1D78 / 821C67A0 / 821C5160).
+[[midasm_hook]]
+address = 0x821BC518
+name = "PdzTuBotTaskNull"
+registers = ["r31"]
+jump_address_on_true = 0x821BC7A4
+
+[[midasm_hook]]
+address = 0x821BC7F8
+name = "PdzTuBotTaskNull"
+registers = ["r31"]
+jump_address_on_true = 0x821BC888
+
+[[midasm_hook]]
+address = 0x821C08E8
+name = "PdzTuBotTaskNull"
+registers = ["r31"]
+jump_address_on_true = 0x821C0980
+
+[[midasm_hook]]
+address = 0x821BF590
+name = "PdzTuBotTaskNull"
+registers = ["r31"]
+jump_address_on_true = 0x821BF660
+
+# U9: skip empty slots in the 4-entry base table (TU3 8217B2A0).
+[[midasm_hook]]
+address = 0x821766FC
+name = "PdzTuBaseSlotNull"
+registers = ["r8"]
+jump_address_on_true = 0x82176708
+
+# U11: Jungle script, list entry 14 also gets 15000 health (TU3 8230E5B4).
+[[midasm_hook]]
+address = 0x823067BC
+name = "PdzTuLv10Health"
+registers = ["r17", "r3", "f1"]
+jump_address_on_true = 0x823067B8
+
+# --- src/mod/bot_limit.cpp: up to 31 bots offline.
+# From PerfectDarkZeroRestored (MIT) midasm_hooks_tu3.toml / docs/BUG_AUDIT.md "Bot limit (MB)".
+
+# Max players list router (sub_823B1950): offline list 15 = [2..16] -> list 13 = [2..32] (TU3 823BAA94).
+[[midasm_hook]]
+address = 0x823B1F7C
+name = "PdzPlayersMaxList"
+registers = ["r3"]
+jump_address_on_true = 0x823B2304
+
+# Base config (sub_823B0388): skip forcing max players back to 16 (TU3 823B92A4).
+[[midasm_hook]]
+address = 0x823B0AD0
+name = "PdzKeepPlayersMax"
+jump_address_on_true = 0x823B0AF4
+
+# Perception slot table full (sub_82184D58, slot -1 written before the table; TU3 821899B4): logged.
+[[midasm_hook]]
+address = 0x82184DF4
+name = "PdzPerceptionSlotsFull"

@@ -8,11 +8,12 @@
 #
 # Flat key = value only
 
-gpu_plugin = "xenos"
+# native / xenos
+gpu_plugin = "native"
 
 # "any" (d3d12 - win default, vulkan - lin default)
 # "d3d11" (experimental) / "d3d12" / "vulkan"
-graphics_backend = "any"
+graphics_backend = "vulkan"
 vsync = true
 resolution_scale = 2
 present_effect = "fsr"
@@ -22,9 +23,13 @@ swap_post_effect = "smaa"
 async_shader_compilation = true
 native_2x_msaa = true
 anisotropic_override = 5
+present_fsr_quality_mode = "auto"
+present_fsr_max_upsampling_passes = 1
+present_cas_additional_sharpness = 0.2
 
-texture_cache_memory_limit_soft = 1024
-texture_cache_memory_limit_hard = 4096
+# native render option
+#native_resolution_scale = 2.25
+
 readback_memexport = false
 readback_memexport_fast = false
 readback_resolve = "none"
@@ -33,6 +38,7 @@ gpu_allow_invalid_fetch_constants = true
 depth_bias_shader_offset = true
 async_depth_only_pipelines = true
 shared_memory_skip_unchanged_uploads = true
+stacked_texture_layer_wrap = 8
 
 window_width = 1920
 window_height = 1080
@@ -59,13 +65,13 @@ d3d12_submit_on_primary_buffer_end = true
 d3d12_tessellation_wireframe = false
 d3d12_readback_resolve = false
 
+vulkan_device = -1
 vulkan_log_debug_messages = false
 vulkan_allow_present_mode_immediate = false
 vulkan_allow_present_mode_fifo_relaxed = false
 vulkan_allow_present_mode_mailbox = true
 vulkan_async_skip_incomplete_frames = false
 vulkan_hoist_shared_memory_uploads = true
-vulkan_max_frames_in_flight = 2
 vulkan_allow_present_mode_fifo_latest_ready = true
 vulkan_resolve_into_textures = true
 
@@ -82,15 +88,19 @@ log_level = "error"
 # Perf CSV log path (per-frame metrics). Empty = disabled.
 # Only works when REXGLUE_ENABLE_PERF_COUNTERS is defined (non-Release).
 #perf_log_csv = "benchmark.csv"
+#frame_stats_interval = 5
 
 # Enable runtime debug tools (stub sweep, missing function scan).
 # Produces logs/missed_functions.txt and logs/stub_sweep.txt.
 dev_debug_runtime = false
+unregistered_function_log = "unregistered_functions.txt"
+trace_gpu_prefix = "traces"
 
 # Ported xenia-canary game-patches for PDZ retail (4D5307D3).
 # https://github.com/xenia-canary/game-patches/blob/main/patches/4D5307D3%20-%20Perfect%20Dark%20Zero.patch.toml
 pdz_fps60_unlock = true
 pdz_aspect_ratio_16_9 = false
+pdz_skip_intro = true
 
 # Vertical FoV before aiming/zoom. Original: 58; range: 40-120.
 pdz_fov = 58.0

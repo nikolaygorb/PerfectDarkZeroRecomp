@@ -31,6 +31,7 @@
 #include "../game_constants.h"
 #include "../game_cvars.h"
 #include "mouse_look.h"
+#include "steer_look.h"
 
 REX_EXTERN(__imp__sub_8259FD70);
 
@@ -170,6 +171,12 @@ namespace
     {
       return;
     }
+    // On foot only (owner == view): the hovercraft and the jetpack pass the vehicle as the owner, whose
+    // "+6560" isn't an input block (steer_look.cpp handles them).
+    if (player != view)
+    {
+      return;
+    }
     // Only views whose angles we know where to find; elsewhere Consume() is not called
     // and the watchdog hands the mouse back to the emulated stick.
     if (!HasVirtual(base, view, kVtblGetYaw, kGetYawFunc) ||
@@ -180,6 +187,13 @@ namespace
     const uint32_t input = player ? LoadBe32(base, player + kPlayerInput) : 0;
     if (!input || static_cast<int32_t>(LoadBe32(base, input + kInputUserIndex)) != 0)
     {
+      return;
+    }
+    pdz::mouse::NoteHumanPlayer(player);
+    // Something else is steered (steer_look.cpp): the mouse is its, not the player's view.
+    if (pdz::mouse::SteeringActive())
+    {
+      look.ConsumeForSteering(pdz::mouse::DirectSteering());
       return;
     }
 

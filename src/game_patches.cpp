@@ -131,6 +131,42 @@ REX_HOOK_RAW(sub_82394750)
   __imp__sub_82394750(ctx, base);
 }
 
+// pdz_skip_intro: from Perfect-Dark-Zero-Reinstated (MIT) src/game_patches.cpp.
+REX_EXTERN(__imp__sub_823975C0);
+REX_EXTERN(__imp__sub_823C6360);
+
+// Movie start: only the front-end intro / attract requests.
+REX_HOOK_RAW(sub_823975C0)
+{
+  const bool startup = (ctx.lr == 0x826173CC && ctx.r3.u32 == 0x820CD6D4) ||
+                       (ctx.lr == 0x822262B4 && (ctx.r3.u32 == 0x82098800 || ctx.r3.u32 == 0x8209881C));
+  if (startup && REXCVAR_GET(pdz_skip_intro) &&
+      rex::memory::load_and_swap<uint32_t>(base + 0x82E2E794) == 0)
+  {
+    REXLOG_INFO("Skip intro: startup movie {:08X} skipped", ctx.r3.u32);
+    ctx.r3.u64 = 0;
+    return;
+  }
+  __imp__sub_823975C0(ctx, base);
+}
+
+// DarkXuiStartAttract: its idle timer (id 1235) would start the demo from the title screen.
+REX_HOOK_RAW(sub_823C6360)
+{
+  const uint32_t message = ctx.r4.u32;
+  if (REXCVAR_GET(pdz_skip_intro) && message &&
+      rex::memory::load_and_swap<uint32_t>(base + message + 4) == 39)
+  {
+    const uint32_t timer = rex::memory::load_and_swap<uint32_t>(base + message + 16);
+    if (timer && rex::memory::load_and_swap<uint32_t>(base + timer) == 1235)
+    {
+      ctx.r3.u64 = 0;
+      return;
+    }
+  }
+  __imp__sub_823C6360(ctx, base);
+}
+
 REX_EXTERN(__imp__sub_82AC4CB8);
 
 REX_HOOK_RAW(sub_82AC4CB8)

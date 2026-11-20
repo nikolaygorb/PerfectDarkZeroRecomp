@@ -14,6 +14,9 @@ REXCVAR_DEFINE_DOUBLE(pdz_fov, GameConstants::PatchConstants::kFovOriginal, "Gam
 REXCVAR_DEFINE_BOOL(pdz_fps60_unlock, false, "Gameplay",
                     "Unlock 60 FPS");
 
+REXCVAR_DEFINE_BOOL(pdz_skip_intro, true, "Gameplay",
+                    "Skip the startup intro movies and the title screen's attract demo");
+
 REXCVAR_DEFINE_BOOL(pdz_aspect_ratio_16_9, false, "Gameplay",
                     "Enable 16:9 aspect ratio");
 

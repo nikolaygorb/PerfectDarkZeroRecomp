@@ -35,12 +35,22 @@ set(PERFECTDARKZERORECOMP_SOURCES
     src/local_profiles.cpp
     src/mouse/mouse_look.cpp
     src/mouse/mouse_look_hook.cpp
+    src/mouse/steer_look.cpp
+    src/mouse/locktopus_input.cpp
+    src/mouse/menu_pointer.cpp
     src/render/gpu_wait_hook.cpp
+    src/render/graphics_backend.cpp
     src/render/native_memory_hook.cpp
     src/timing/physics_step_hook.cpp
     src/timing/cutscene_frame_cap_hook.cpp
+    src/timing/rate_fixes.cpp
+    src/timing/ramp_step.cpp
+    src/fixes/tu_fixes.cpp
+    src/fixes/distant_lights.cpp
+    src/fixes/ai_rate_fixes.cpp
     src/mod/third_person.cpp
     src/mod/fov_settings.cpp
+    src/mod/bot_limit.cpp
 )
 
 if(WIN32)
@@ -55,7 +65,9 @@ else()
     add_executable(perfectdarkzerorecomp ${PERFECTDARKZERORECOMP_SOURCES})
 endif()
 
-rexglue_setup_target(perfectdarkzerorecomp GPU_PLUGINS xenos)
+rexglue_setup_target(perfectdarkzerorecomp GPU_PLUGINS xenos native)
+
+rexglue_add_launcher(perfectdarkzerorecomp ICON_RC src/perfectdarkzerorecomp.rc)
 
 # SDL looks for this file (name set by settings/mapping.toml's
 # hid_mappings_file) next to the exe at startup to fill in gamepads it

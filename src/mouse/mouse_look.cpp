@@ -10,7 +10,9 @@
 #include <rex/ui/windowed_app_context.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
+#include <cstdlib>
 #include <utility>
 
 REXCVAR_DEFINE_BOOL(pdz_mouse_look, true, "Mouse",
@@ -51,6 +53,29 @@ namespace pdz::mouse
     // Guards against a stalled frame or a pointer teleport turning into one
     // huge snap: no single Consume() turns the camera by more than this.
     constexpr double kMaxDegreesPerCall = 85.0;
+
+    // TakeSteerStick: the mouse speed's smoothing time constant (seconds).
+    constexpr double kSteerSmoothing = 0.04;
+
+    // mnk_sensitivity lives in the SDK DLL: read by name, twice a second.
+    double SteerSensitivity()
+    {
+      static std::atomic<double> value{5.0};
+      static std::atomic<int64_t> read_at{0};
+      const int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              std::chrono::steady_clock::now().time_since_epoch())
+                              .count();
+      if (now - read_at.load(std::memory_order_relaxed) >= 500)
+      {
+        read_at.store(now, std::memory_order_relaxed);
+        const double v = std::atof(rex::cvar::GetFlagByName("mnk_sensitivity").c_str());
+        if (std::isfinite(v) && v > 0.0)
+        {
+          value.store(std::min(v, 100.0), std::memory_order_relaxed);
+        }
+      }
+      return value.load(std::memory_order_relaxed);
+    }
   } // namespace
 
   MouseLook &MouseLook::Get()
@@ -106,6 +131,8 @@ namespace pdz::mouse
   void MouseLook::OnMouseMove(rex::ui::MouseEvent &e)
   {
     std::lock_guard lock(mu_);
+    raw_dx_ += e.dx();
+    raw_dy_ += e.dy();
     if (phase_ != Phase::kEngaged)
     {
       return;
@@ -148,7 +175,7 @@ namespace pdz::mouse
     watchdog_cv_.notify_all();
     if (give_back)
     {
-      rex::input::mnk::SetMouseLookActive(true);
+      GiveBackToMnk();
     }
   }
 
@@ -232,7 +259,7 @@ namespace pdz::mouse
         phase_ = Phase::kIdle;
       }
       // Only now: mnk re-captures on its next poll, after the pointer is free.
-      rex::input::mnk::SetMouseLookActive(true);
+      GiveBackToMnk();
     };
   }
 
@@ -258,7 +285,7 @@ namespace pdz::mouse
       phase_ = Phase::kIdle;
       captured_ = false;
     }
-    rex::input::mnk::SetMouseLookActive(true);
+    GiveBackToMnk();
   }
 
   void MouseLook::WatchdogLoop()
@@ -282,57 +309,165 @@ namespace pdz::mouse
     }
   }
 
+  bool MouseLook::AdvanceClaimLocked(Clock::time_point now, UiTask &task)
+  {
+    last_consume_ = now;
+    switch (phase_)
+    {
+    case Phase::kIdle:
+      // Claim: mnk stops mapping the mouse to the stick and releases its own capture on its next poll.
+      rex::input::mnk::SetMouseLookActive(false);
+      phase_ = Phase::kHandoff;
+      handoff_since_ = now;
+      break;
+
+    case Phase::kHandoff:
+    {
+      const auto waited = now - handoff_since_;
+      const bool mnk_let_go =
+          window_->GetCursorVisibility() != rex::ui::Window::CursorVisibility::kHidden;
+      if (waited >= kHandoffMin && (mnk_let_go || waited >= kHandoffMax))
+      {
+        task = BeginEngageLocked();
+      }
+      break;
+    }
+
+    case Phase::kEngaging:
+    case Phase::kReleasing:
+      break;
+
+    case Phase::kEngaged:
+      return true;
+    }
+    return false;
+  }
+
   std::optional<Turn> MouseLook::Consume(double extra_scale)
   {
     UiTask task;
     std::optional<Turn> result;
     {
       std::lock_guard lock(mu_);
-      const auto now = Clock::now();
-      last_consume_ = now;
-
       const bool want =
           REXCVAR_GET(pdz_mouse_look) && window_ && has_focus_ && !OverlayWantsMouse();
       if (!want)
       {
+        last_consume_ = Clock::now();
         task = BeginReleaseLocked();
       }
-      else
+      else if (AdvanceClaimLocked(Clock::now(), task))
       {
-        switch (phase_)
-        {
-        case Phase::kIdle:
-          // Claim: mnk stops mapping the mouse to the stick and releases its
-          // own capture on its next poll.
-          rex::input::mnk::SetMouseLookActive(false);
-          phase_ = Phase::kHandoff;
-          handoff_since_ = now;
-          break;
-
-        case Phase::kHandoff:
-        {
-          const auto waited = now - handoff_since_;
-          const bool mnk_let_go =
-              window_->GetCursorVisibility() != rex::ui::Window::CursorVisibility::kHidden;
-          if (waited >= kHandoffMin && (mnk_let_go || waited >= kHandoffMax))
-          {
-            task = BeginEngageLocked();
-          }
-          break;
-        }
-
-        case Phase::kEngaging:
-        case Phase::kReleasing:
-          break;
-
-        case Phase::kEngaged:
-          result = TakeTurnLocked(extra_scale);
-          break;
-        }
+        result = TakeTurnLocked(extra_scale);
       }
     }
     Post(std::move(task));
     return result;
+  }
+
+  void MouseLook::ConsumeForSteering(bool direct)
+  {
+    UiTask task;
+    {
+      std::lock_guard lock(mu_);
+      const bool want =
+          REXCVAR_GET(pdz_mouse_look) && window_ && has_focus_ && !OverlayWantsMouse();
+      if (!want)
+      {
+        last_consume_ = Clock::now();
+        task = BeginReleaseLocked();
+      }
+      else if (AdvanceClaimLocked(Clock::now(), task) && !direct)
+      {
+        steer_dx_ += pending_dx_;
+        steer_dy_ += pending_dy_;
+        pending_dx_ = pending_dy_ = 0.0;
+      }
+    }
+    Post(std::move(task));
+  }
+
+  Turn MouseLook::ConsumeSteer(double extra_scale)
+  {
+    UiTask task;
+    Turn turn{0.0, 0.0};
+    {
+      std::lock_guard lock(mu_);
+      const bool want =
+          REXCVAR_GET(pdz_mouse_look) && window_ && has_focus_ && !OverlayWantsMouse();
+      if (!want)
+      {
+        last_consume_ = Clock::now();
+        task = BeginReleaseLocked();
+      }
+      else if (AdvanceClaimLocked(Clock::now(), task))
+      {
+        turn = TakeTurnLocked(extra_scale);
+      }
+    }
+    Post(std::move(task));
+    return turn;
+  }
+
+  MouseLook::SteerStick MouseLook::TakeSteerStick(bool steering)
+  {
+    std::lock_guard lock(mu_);
+    const auto now = Clock::now();
+    const double dt =
+        std::clamp(std::chrono::duration<double>(now - last_stick_).count(), 1e-4, 0.1);
+    last_stick_ = now;
+    const double cx = steer_dx_, cy = steer_dy_;
+    steer_dx_ = steer_dy_ = 0.0;
+    SteerStick out;
+    if (!steering)
+    {
+      steer_vx_ = steer_vy_ = 0.0;
+      return out;
+    }
+    // Speed in counts per second, smoothed so a poll without motion doesn't drop the stick to zero.
+    const double alpha = 1.0 - std::exp(-dt / kSteerSmoothing);
+    steer_vx_ += (cx / dt - steer_vx_) * alpha;
+    steer_vy_ += (cy / dt - steer_vy_) * alpha;
+    // mnk's scale (mnk_sensitivity x 200 per count per 120 Hz poll) as a rate.
+    const double per_count_per_s = SteerSensitivity() * 200.0 / 120.0 / 32767.0;
+    const double y_sign = REXCVAR_GET(pdz_mouse_invert_y) ? -1.0 : 1.0;
+    const double fx = std::clamp(steer_vx_ * per_count_per_s, -1.0, 1.0);
+    const double fy = std::clamp(-steer_vy_ * per_count_per_s * y_sign, -1.0, 1.0);
+    out.x = std::fabs(fx) < 0.003 ? 0.0 : fx;
+    out.y = std::fabs(fy) < 0.003 ? 0.0 : fy;
+    return out;
+  }
+
+  void MouseLook::TakeRawMotion(double &dx, double &dy)
+  {
+    std::lock_guard lock(mu_);
+    dx = raw_dx_;
+    dy = raw_dy_;
+    raw_dx_ = raw_dy_ = 0.0;
+  }
+
+  bool MouseLook::OverlayActive() const
+  {
+    std::lock_guard lock(mu_);
+    return OverlayWantsMouse();
+  }
+
+  void MouseLook::SetMenuPointer(bool active)
+  {
+    if (menu_pointer_.exchange(active) == active)
+    {
+      return;
+    }
+    std::lock_guard lock(mu_);
+    if (phase_ == Phase::kIdle)
+    {
+      rex::input::mnk::SetMouseLookActive(!active);
+    }
+  }
+
+  void MouseLook::GiveBackToMnk()
+  {
+    rex::input::mnk::SetMouseLookActive(!menu_pointer_.load());
   }
 
   Turn MouseLook::TakeTurnLocked(double extra_scale)
@@ -340,7 +475,11 @@ namespace pdz::mouse
     const double dx = pending_dx_;
     const double dy = pending_dy_;
     pending_dx_ = pending_dy_ = 0.0;
+    return TurnFromCounts(dx, dy, extra_scale);
+  }
 
+  Turn MouseLook::TurnFromCounts(double dx, double dy, double extra_scale)
+  {
     const double degrees_per_count =
         REXCVAR_GET(pdz_mouse_sensitivity) * kDegreesPerCount * extra_scale;
     const double x_sign = REXCVAR_GET(pdz_mouse_invert_x) ? -1.0 : 1.0;

@@ -11,7 +11,7 @@ database, this README, and reference pages copied from the SDK's `docs/`.
 | [`gamecontrollerdb.txt`](gamecontrollerdb.txt) | SDL gamepad mappings for controllers it doesn't already recognize - not hand-authored, see below |
 | [`faq.md`](faq.md) | Every SDK graphics option (copy of the SDK's `graphics-options.md`) |
 | [`split-screen.md`](split-screen.md) | Split-screen players and device assignment (copy of the SDK page) |
-| [`texture-replacement.md`](texture-replacement.md), [`gpu-traces.md`](gpu-traces.md) | HD texture packs and GPU frame traces, linked from `faq.md` (copies of the SDK pages) |
+| [`texture-replacement.md`](texture-replacement.md) | HD texture packs, linked from `faq.md` (copy of the SDK page) |
 
 Split in two on purpose: rendering/perf tweaks and input tweaks are separate
 concerns you'll want to touch independently, and both stay tiny because
@@ -76,6 +76,12 @@ overlay. If you experiment there, expect `git diff` to show more than the
 hand-picked keys below - `git checkout -- settings/hardware.toml` reverts it
 to the committed defaults.
 
+The launcher (`perfectdarkzerorecomp_launcher.exe`, page in
+[`../launcher/launcher.toml`](../launcher/launcher.toml)) also writes both
+files, but in place: only the lines of the settings changed there differ,
+comments and order stay. A setting missing from the file is added only when
+it's changed in the launcher.
+
 ## Caveat: engine hotkeys aren't in `mapping.toml`
 
 `mapping.toml` only covers static-flag input cvars (table below). The
@@ -115,14 +121,17 @@ build actually ships with), not the SDK's compiled-in default.
 
 | Key | Type | Default | Effect |
 |---|---|---|---|
-| `gpu_plugin` | string | `"xenos"` | GPU emulation plugin to load. Set here rather than on the command line now - see root [README](../README.md#run). A `--gpu_plugin` flag would still override this file if you ever needed a different plugin. |
-| `graphics_backend` | string | `"any"` | Graphics API backend: `"any"` (D3D12 first when both are compiled in), `"d3d12"`, `"vulkan"`, or `"d3d11"` (experimental, Windows, never picked by `"any"`; see [`faq.md`](faq.md#direct3d-11-experimental)). Project-defined cvar (not from the SDK), wired up in `OnPreSetup()` in [`src/perfectdarkzerorecomp_app.h`](../src/perfectdarkzerorecomp_app.h) - it loads the plugin itself with the requested backend before the SDK's own auto-load (which only ever requests `"any"`) runs. Falls back to automatic selection with a warning if the requested backend isn't compiled into `rexgpu-xenos`. |
+| `gpu_plugin` | string | `"native"` | GPU plugin to load: `"native"` (the SDK's native renderer `rexgpu-native`, Vulkan only) or `"xenos"` (GPU emulation `rexgpu-xenos`, D3D12 / Vulkan / D3D11). Both are built and copied next to the exe (`GPU_PLUGINS xenos native` in `CMakeLists.txt`); `xenos` is the fallback if the native renderer draws something wrong. A `--gpu_plugin` flag would still override this file. |
+| `graphics_backend` | string | `"vulkan"` | Graphics API backend: `"any"` (D3D12 first when both are compiled in), `"d3d12"`, `"vulkan"`, or `"d3d11"` (experimental, Windows, never picked by `"any"`; see [`faq.md`](faq.md#direct3d-11-experimental)). Applies to `xenos`; the native renderer is always Vulkan. Project-defined cvar (not from the SDK), wired up in [`src/render/graphics_backend.cpp`](../src/render/graphics_backend.cpp) (called from `OnPreSetup()`) - it loads the plugin itself with the requested backend before the SDK's own auto-load (which only ever requests `"any"`) runs. Falls back to automatic selection with a warning if the requested backend isn't compiled into the plugin. |
+| `native_resolution_scale` | double | commented out (`2.25`) | Native renderer only: render scale instead of `resolution_scale`, `1` to `4` in steps of `0.25` (fractional scales are cheaper than the next whole one). Read at start. See [`faq.md`](faq.md). |
 | `vsync` | bool | `true` | Vertical sync. |
+| `depth_float24_convert_in_pixel_shader` | bool | not in the file: `false` | Exact 24-bit float depth in the pixel shader. Not needed on any backend: the volumetric light shafts under lamps that broke off on Vulkan were fixed in the SDK (its SPIR-V translator didn't scale depth written by the game's shaders). It costs the early depth test, so leave it off. |
 | `resolution_scale` | int | `2` | Internal render-target supersampling, independent of window/guest resolution. |
 | `async_shader_compilation` | bool | `true` | Compile shaders on a background thread instead of blocking the render thread - reduces hitches when new shaders are first seen. |
 | `native_2x_msaa` | bool | `true` | Native 2x MSAA on the emulated render targets. |
 | `anisotropic_override` | int | `5` | Forces anisotropic texture filtering, `-1` to `5`; `5` = 16x (SDK default `3` = 4x). |
-| `present_effect` | string | `"fsr"` | How the image is scaled to the window: `bilinear`, `cas`, `fsr`, `nis`. `present_fsr_sharpness_reduction` (`0.2`) sets FSR sharpening. |
+| `present_effect` | string | `"fsr"` | How the image is scaled to the window: `bilinear`, `cas`, `fsr`, `nis`. `present_fsr_sharpness_reduction` (`0.2`) sets FSR sharpening, `present_fsr_max_upsampling_passes` (`1`) limits FSR to one 2x pass, `present_cas_additional_sharpness` (`0.2`) is extra CAS sharpness, `present_fsr_quality_mode` (`"auto"`) is only used by the optional FSR 2 / 3 builds. |
+| `stacked_texture_layer_wrap` | int | `8` | Water ripples and caustics loop smoothly instead of stopping and jumping back at the end of each loop. Vulkan (`xenos` and `native`) only. See [`faq.md`](faq.md). |
 | `present_dither` | bool | `true` | Dithers the final image against banding. |
 | `swap_post_effect` | string | `"smaa"` | Anti-aliasing on the final image: `none`, `fxaa`, `fxaa_extreme`, `smaa`. |
 | `window_width` / `window_height` | int | `1920` / `1080` | Host window size. |
@@ -133,6 +142,7 @@ build actually ships with), not the SDK's compiled-in default.
 | `d3d12_debug` | bool | `false` | D3D12 debug layer. Leave off - noticeably slower. |
 | `pdz_fps60_unlock` | bool | `true` | Port of Xenia-canary's Perfect Dark Zero "60 FPS" patch. Applied through a C++ function override and can be toggled at runtime. |
 | `pdz_aspect_ratio_16_9` | bool | `false` | Port of Xenia-canary's "Aspect Ratio" patch. Applied while loading the game image; restart after changing it. |
+| `pdz_skip_intro` | bool | `true` | Skips the startup intro movies and the title screen's attract demo. Hooks in [`src/game_patches.cpp`](../src/game_patches.cpp), ported from Perfect-Dark-Zero-Reinstated. |
 | `pdz_fov` | double | `58.0` | Vertical field of view before zoom, range `40`-`120`. Changed in game with `bind_fov_settings` (F6). |
 | `user_language` | int | `1` | Game language: `1` English, `3` German, `4` French. SDK cvar, applied by a hook in [`src/game_patches.cpp`](../src/game_patches.cpp) because the SDK's `XGetLanguage` ignores it. Languages missing from `loc/` fall back to English. Restart after changing it. |
 | `pdz_gpu_wait_mode` | int | `1` | How the game's GPU wait loop idles: `0` busy spin (original), `1` yield the core, `2` sleep 200 µs. Hook in `src/render/`. |
@@ -140,11 +150,13 @@ build actually ships with), not the SDK's compiled-in default.
 | `max_local_users` | int | `4` | Local split-screen players that can be signed in, 1 to 4. The shipped value is `4`; the SDK default is `1` (single player). SDK cvar, see [Split-screen](#split-screen). |
 | `keyboard_own_player` | bool | `false` (commented out) | Keyboard and mouse are player 1 on their own and gamepads start at player 2. Shipped commented out in `hardware.toml`; uncomment to use. See [Split-screen](#split-screen). |
 
-The rest of `hardware.toml` (texture cache limits, `readback_*`,
-`render_target_path_*`, `shared_memory_skip_unchanged_uploads`, `d3d12_*`,
-`vulkan_*`, `d3d11_*`, `log_level`, ...) are SDK GPU and debug settings, all
+The rest of `hardware.toml` (`readback_*`, `render_target_path_*`,
+`shared_memory_skip_unchanged_uploads`, `d3d12_*`, `vulkan_*`, `d3d11_*`,
+`log_level`, `trace_gpu_prefix`, ...) are SDK GPU and debug settings, all
 described in [`faq.md`](faq.md). `dev_debug_runtime` is described in the root
-README's development notes.
+README's development notes. `unregistered_function_log` (SDK) appends every
+guest address called without a recompiled function to that file, as a
+`[functions]` entry ready for the manifest.
 
 `native_memory` (bool, default `true`, not listed in `hardware.toml`) runs the
 game's `memcpy`, `memset` and `memmove` as host code. It is defined by
@@ -154,6 +166,31 @@ set it to `false` to rule it out when chasing a bug.
 
 The source Xenia patch file also contains a "Bottomless Clip" patch. It is
 not ported yet, so there is no corresponding cvar in this project.
+
+## Fixes
+
+Project cvars, not listed in `hardware.toml`: all `true` by default, add a
+line to turn one off. All can be changed while the game runs. Ported from
+[PerfectDarkZeroRestored](https://github.com/EddieVanHelgen/PerfectDarkZeroRestored)
+(MIT), its Title Update 3 addresses mapped to the launch executable; the
+mid-function hooks are in [`../patches.toml`](../patches.toml).
+
+| Key | Effect |
+|---|---|
+| `pdz_fix_door_motion` | Doors and other animated props open fully above 30 FPS. [`src/timing/rate_fixes.cpp`](../src/timing/rate_fixes.cpp), as the three below. |
+| `pdz_fix_turret_rate` | Bridge's ship turret aims at Rare's 30 FPS speed. |
+| `pdz_fix_idle_fidget_rate` | Gun idle fidgets come at Rare's 30 FPS rate. |
+| `pdz_fix_screen_flicker_rate` | Framebuffer-effect screen flicker starts at Rare's 30 FPS rate. |
+| `pdz_fix_ramp_step` | Above 30 FPS the player's wall check sees Rare's 30 FPS move at low edges (Subway's end-train ramp); walls are unchanged. `pdz_fix_ramp_step_edge` (`0.2`, `0`-`1`) is the share of the push that counts as a low edge. [`src/timing/ramp_step.cpp`](../src/timing/ramp_step.cpp). |
+| `pdz_fix_ai_semiauto_rhythm` | Enemies with semi-automatic guns fire at Rare's 30 FPS rhythm (they fired up to 2x / 4x faster at 60 / 120 FPS). [`src/fixes/ai_rate_fixes.cpp`](../src/fixes/ai_rate_fixes.cpp), as the one below. |
+| `pdz_fix_ai_taunt_rate` | Subway's pre-fight taunts start at Rare's 30 FPS rate. |
+| `pdz_fix_distant_lights` | Distant window lights no longer switch off when looked at head-on: kept by distance from the camera, not depth along the view. `pdz_distant_lights_reach` (`1.0`, `0.05`-`4`) multiplies the distance; `0.8` = lights reach further. [`src/fixes/distant_lights.cpp`](../src/fixes/distant_lights.cpp). |
+| `pdz_fix_tu_datacore_null`, `pdz_fix_tu_bot_task_null`, `pdz_fix_tu_base_slot_null` | Title Update 3 null checks: the Datacore script's tracked character, bot tasks without their mode object, empty slots of the multiplayer base table. [`src/fixes/tu_fixes.cpp`](../src/fixes/tu_fixes.cpp), as the rows below. |
+| `pdz_fix_tu_lv10_health` | Title Update 3: the Jungle script gives list entry 14 the 15000 health entry 13 gets. |
+| `pdz_fix_tu_flag_drop` | Title Update 3: a destroyed flag weapon drops the flag only when its holder is the carrier. |
+| `pdz_fix_tu_teleport` | Title Update 3: teleported characters are re-inserted in the world lists, attached objects follow. |
+| `pdz_fix_tu_cover_cooldown` | Title Update 3: no cover scan for 1 s after leaving cover (the Cover Move exploit). |
+| `pdz_bots_31` | Offline multiplayer: up to 31 bots (32 players) instead of 15. Applies when the match setup opens. [`src/mod/bot_limit.cpp`](../src/mod/bot_limit.cpp). |
 
 ## Split-screen
 
@@ -208,7 +245,10 @@ game itself decides how split-screen looks and when it accepts new players.
 | `pdz_mouse_invert_x` / `pdz_mouse_invert_y` | bool | `false` | Invert native mouse look axes. The in-game Invert option doesn't apply to it. |
 | `pdz_mouse_zoom_scaling` | bool | `true` | Scale native mouse look by `tan(fov/2) / tan(pdz_fov/2)` while zoomed, so the picture moves under the mouse at the same rate. |
 | `pdz_mouse_zoom_sensitivity` | double | `1.0` | Extra factor on native mouse look while zoomed in. |
-| `keybind_*` | string | WASD layout | Keyboard and mouse keys for each controller button and stick direction, see above. |
+| `pdz_mouse_menu_pointer` | bool | not in the file: `true` | The mouse in menus: point and left-click selects, right-click goes back, middle-click is Start, side buttons are LB / RB, the wheel moves up / down (Shift: left / right, Ctrl: LB / RB). [`src/mouse/menu_pointer.cpp`](../src/mouse/menu_pointer.cpp), ported from Perfect-Dark-Zero-Reinstated. |
+| `pdz_mouse_steer` | bool | not in the file: `true` | The mouse steers the CamSpy, the guided rocket, the hovercraft and the jetpack (as the right stick) and aims mounted turrets directly. [`src/mouse/steer_look.cpp`](../src/mouse/steer_look.cpp), ported from PerfectDarkZeroRestored. |
+| `pdz_locktopus_mnk` | bool | not in the file: `true` | The Locktopus on keyboard and mouse: the left stick keys turn the pick round the circle (left / right) and push it out / in (up / down), Shift slows it, the mouse moves it. A controller is unchanged. `pdz_locktopus_key_turn_s` (`2.5`) is the seconds for a full circle, `pdz_locktopus_key_slow` (`0.4`) the speed with Shift, `pdz_locktopus_mouse_counts` (`400`) the mouse counts to full deflection. [`src/mouse/locktopus_input.cpp`](../src/mouse/locktopus_input.cpp), ported from PerfectDarkZeroRestored. |
+| `keybind_*` | string | WASD layout | Keyboard and mouse keys for each controller button and stick direction, see above. Mouse buttons `LMB`, `RMB`, `MMB`, `MB4`, `MB5` (side buttons) and the wheel (`WheelUp`, `WheelDown`) can be bound too. The launcher's Controls > Edit bindings edits them on a picture of the pad. |
 | `bind_third_person` | string | `"V"` | Toggle the third-person camera (`pdz_tp_*`). |
 | `bind_fov_settings` | string | `"F6"` | Toggle the field of view slider (`pdz_fov`). |
 | `bind_local_profiles` | string | `"F9"` | Toggle the local profile list. Not listed in `mapping.toml`; add it to rebind. |
@@ -232,4 +272,7 @@ instead.
 with its declaration in [`src/game_cvars.h`](../src/game_cvars.h). Project
 cvars register at static-init time, so they load with the first config pass.
 Define future project-specific toggles there, read them with
-`REXCVAR_GET(name)`, and document them in this table.
+`REXCVAR_GET(name)`, and document them in this table. Cvars used by one
+module only (the `pdz_fix_*`, `pdz_bots_31`, `pdz_mouse_menu_pointer`,
+`pdz_mouse_steer`, `pdz_locktopus_*`) are defined at the top of that module's
+`.cpp` instead.

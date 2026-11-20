@@ -22,7 +22,9 @@ others to change them):
 | `pdz_tp_auto_fp_gadgets` | `true` | Use first person while hacking with the Data Thief |
 
 This folder also holds the field of view slider (`fov_settings.cpp`, F6,
-`pdz_fov`); see the root [README](../../README.md#field-of-view).
+`pdz_fov`; see the root [README](../../README.md#field-of-view)) and the bot
+limit (`bot_limit.cpp`, `pdz_bots_31`: up to 31 bots offline; see the root
+[README](../../README.md#up-to-31-bots)).
 
 ## How it works
 

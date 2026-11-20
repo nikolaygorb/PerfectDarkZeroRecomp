@@ -1,0 +1,161 @@
+# Perfect Dark Zero: the launcher's page for this title (format: thirdparty/rexglue-sdk/docs/launcher.md).
+# The common rows (display, renderer, upscaling, controls, language, log) come from the SDK's
+# launcher/common.toml; rows here with the same key replace them.
+
+[game]
+name = "Perfect Dark Zero"
+required_files = ["assets/default.xex"]
+
+[theme]
+bg = "#071027"
+bg2 = "#040919"
+side = "#081230"
+panel = "#0E1C44"
+panel_hot = "#14275A"
+border = "#23407F"
+text = "#E4EAF4"
+dim = "#A2B1CF"
+accent = "#FF6A2A"
+accent_hi = "#FF8A50"
+accent_text = "#061026"
+accent2 = "#5FD3FF"
+warn = "#FF8A50"
+ok = "#5FD3FF"
+display_font = "fonts/Rajdhani-Bold.ttf"
+tagline = "Recompiled"
+
+[[theme.wordmark]]
+text = "PERFECT DARK"
+size = 23
+tracking = 0.02
+shear = 11
+gradient = ["#FFFFFF", "#E2EEFF", "#7BA4F0", "#2B4FC4"]
+outline = { color = "#0A1A4A", width = 0.8 }
+
+[[theme.wordmark]]
+text = "ZERO"
+size = 46
+tracking = 0.05
+indent = 28
+shear = 11
+gradient = ["#FFFFFF", "#E2EEFF", "#7BA4F0", "#2B4FC4"]
+outline = { color = "#0A1A4A", width = 0.8 }
+
+#------------------------------------------------------------------------------
+# Game
+#------------------------------------------------------------------------------
+
+[[row]]
+page = "Game"
+key = "pdz_fov"
+kind = "slider"
+label = "Field of view"
+min = 40
+max = 120
+step = 1
+suffix = "°"
+default = 58.0
+help = "Vertical field of view before zoom, in degrees. The original is 58."
+
+[[row]]
+page = "Game"
+key = "pdz_aspect_ratio_16_9"
+kind = "toggle"
+label = "16:9 picture"
+default = false
+help = "Widescreen projection for every view, menus included."
+
+[[row]]
+page = "Game"
+key = "pdz_fps60_unlock"
+kind = "toggle"
+label = "60 fps"
+default = true
+restart = true
+help = "Runs the game at 60 frames per second instead of the original 30."
+
+[[row]]
+page = "Game"
+key = "pdz_skip_intro"
+kind = "toggle"
+label = "Skip intro"
+default = true
+help = "Starts at the title screen."
+
+[[row]]
+page = "Game"
+key = "pdz_tp_enable"
+kind = "toggle"
+label = "Third person"
+default = false
+help = "Over-the-shoulder camera. The key that toggles it while playing is bind_third_person in settings/mapping.toml."
+
+#------------------------------------------------------------------------------
+# Controls
+#------------------------------------------------------------------------------
+
+[[row]]
+page = "Controls"
+key = "pdz_mouse_look"
+file = "mapping"
+kind = "toggle"
+label = "Mouse look"
+default = true
+help = "Raw mouse movement turns the camera, 1:1, without stick dead zones or acceleration."
+
+[[row]]
+page = "Controls"
+key = "pdz_mouse_sensitivity"
+file = "mapping"
+kind = "slider"
+label = "Mouse sensitivity"
+min = 0.2
+max = 6.0
+step = 0.1
+decimals = 1
+default = 2.0
+enable_if = { key = "pdz_mouse_look", value = true }
+help = "Camera turn per mouse count: 0.022° × this value, as in Source games."
+
+[[row]]
+page = "Controls"
+key = "pdz_mouse_zoom_scaling"
+file = "mapping"
+kind = "toggle"
+label = "Slower when aiming"
+default = true
+enable_if = { key = "pdz_mouse_look", value = true }
+help = "Scales the mouse down with the zoom while aiming."
+
+[[row]]
+page = "Controls"
+key = "pdz_mouse_invert_y"
+file = "mapping"
+kind = "toggle"
+label = "Invert mouse Y"
+default = false
+enable_if = { key = "pdz_mouse_look", value = true }
+help = "Moving the mouse up looks down."
+
+[[row]]
+page = "Controls"
+key = "pdz_mouse_invert_x"
+file = "mapping"
+kind = "toggle"
+label = "Invert mouse X"
+default = false
+enable_if = { key = "pdz_mouse_look", value = true }
+help = "Moving the mouse right looks left."
+
+#------------------------------------------------------------------------------
+# Advanced
+#------------------------------------------------------------------------------
+
+[[row]]
+page = "Advanced"
+key = "pdz_gpu_wait_mode"
+kind = "choice"
+label = "GPU wait"
+choices = [[0, "Spin"], [1, "Yield"], [2, "Sleep"]]
+default = 1
+help = "How the game thread waits for the GPU. Spin is the original (a full CPU core), Yield gives the core away, Sleep naps 200 µs."
