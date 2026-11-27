@@ -6,6 +6,10 @@
 name = "Perfect Dark Zero"
 required_files = ["assets/default.xex"]
 
+[common]
+# Upscaler (AMD FSR, Intel XeSS) and frame generation: PDZ gives the SDK its scene data (src/render/engine).
+enable = ["native_temporal_upscaler", "native_scene_upscale", "native_fsr_sharpness", "native_frame_generation"]
+
 [theme]
 bg = "#071027"
 bg2 = "#040919"
@@ -42,6 +46,24 @@ gradient = ["#FFFFFF", "#E2EEFF", "#7BA4F0", "#2B4FC4"]
 outline = { color = "#0A1A4A", width = 0.8 }
 
 #------------------------------------------------------------------------------
+# Graphics
+#------------------------------------------------------------------------------
+
+# The common row, with PDZ's shipped value (settings/hardware.toml) as its default.
+[[row]]
+page = "Graphics"
+key = "present_cas_additional_sharpness"
+kind = "slider"
+label = "CAS sharpness"
+min = 0.0
+max = 1.0
+step = 0.05
+decimals = 2
+default = 0.2
+enable_if = { key = "present_effect", value = "cas" }
+help = "Extra sharpening on top of CAS's own."
+
+#------------------------------------------------------------------------------
 # Game
 #------------------------------------------------------------------------------
 
@@ -56,14 +78,6 @@ step = 1
 suffix = "°"
 default = 58.0
 help = "Vertical field of view before zoom, in degrees. The original is 58."
-
-[[row]]
-page = "Game"
-key = "pdz_aspect_ratio_16_9"
-kind = "toggle"
-label = "16:9 picture"
-default = false
-help = "Widescreen projection for every view, menus included."
 
 [[row]]
 page = "Game"
@@ -82,17 +96,48 @@ label = "Skip intro"
 default = true
 help = "Starts at the title screen."
 
-[[row]]
-page = "Game"
-key = "pdz_tp_enable"
-kind = "toggle"
-label = "Third person"
-default = false
-help = "Over-the-shoulder camera. The key that toggles it while playing is bind_third_person in settings/mapping.toml."
-
 #------------------------------------------------------------------------------
 # Controls
 #------------------------------------------------------------------------------
+
+[[row]]
+page = "Controls"
+key = "bind_third_person"
+file = "mapping"
+kind = "keybind"
+label = "3rd Person Mode key"
+default = "V"
+help = "Toggle third-person camera while playing."
+
+[[row]]
+page = "Controls"
+key = "bind_settings"
+file = "mapping"
+kind = "keybind"
+label = "Setting menu"
+default = "F4"
+disabled = true
+help = "Open the settings menu while playing. This binding cannot be changed in the launcher."
+
+[[row]]
+page = "Controls"
+key = "bind_fov_settings"
+file = "mapping"
+kind = "keybind"
+label = "FOV menu"
+default = "F6"
+disabled = true
+help = "Open the field of view menu while playing. This binding cannot be changed in the launcher."
+
+[[row]]
+page = "Controls"
+key = "bind_local_profiles"
+file = "mapping"
+kind = "keybind"
+label = "Local profiles menu"
+default = "F9"
+disabled = true
+help = "Open the local profiles menu while playing. This binding cannot be changed in the launcher."
 
 [[row]]
 page = "Controls"

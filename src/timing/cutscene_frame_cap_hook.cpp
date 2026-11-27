@@ -17,6 +17,9 @@
 #include <rex/runtime.h>
 #include <rex/system/xmemory.h>
 
+#include "../render/engine/render_hooks.h"
+#include "../render/engine/scene_probe.h"
+
 REX_EXTERN(__imp__sub_826CFC10);
 
 namespace
@@ -190,7 +193,10 @@ REX_HOOK_RAW(sub_826CFC10)
 {
   static thread_local std::chrono::steady_clock::time_point previous{};
 
-  if (!base || GameplayCameraActive(base))
+  const bool gameplay = !base || GameplayCameraActive(base);
+  // Player control <-> cutscene/scripted camera is a temporal history cut.
+  pdz::engine::scene::NoteGameplayCamera(gameplay);
+  if (gameplay)
   {
     previous = {};
   }
@@ -203,5 +209,5 @@ REX_HOOK_RAW(sub_826CFC10)
     previous = std::chrono::steady_clock::now();
   }
 
-  __imp__sub_826CFC10(ctx, base);
+  pdz::engine::OnSwap(ctx, base);
 }

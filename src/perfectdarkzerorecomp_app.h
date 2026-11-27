@@ -22,6 +22,7 @@
 #include "mouse/menu_pointer.h"
 #include "mouse/mouse_look.h"
 #include "render/graphics_backend.h"
+#include "render/engine/engine.h"
 #include "utils.h"
 
 #ifdef REXGLUE_ENABLE_PERF_COUNTERS
@@ -49,6 +50,7 @@ public:
   void OnPostLoadXexImage() override
   {
     game_patches::ApplyEnabledPatches();
+    pdz::engine::Initialize();
   }
 
   void OnCreateDialogs(rex::ui::ImGuiDrawer *drawer) override
@@ -90,11 +92,19 @@ public:
 
   void OnShutdown() override
   {
+    pdz::engine::Shutdown();
     fov_settings::Shutdown();
     local_profiles::Shutdown();
 #ifdef REXGLUE_ENABLE_PERF_COUNTERS
     rex::perf::FlushCsv();
 #endif
+  }
+
+  void OnPreTerminateTitle() override
+  {
+    // ReXApp hard-exits after terminating the title; OnShutdown is not reached
+    // on that path. Persist diagnostics before guest memory is torn down.
+    pdz::engine::Shutdown();
   }
 
   void OnConfigurePaths(rex::PathConfig &paths) override

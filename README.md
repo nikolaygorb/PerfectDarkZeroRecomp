@@ -23,10 +23,16 @@ Target retail release:
 
 ## Status
 
-- Fully playable on Windows and Linux: video, audio, gameplay, achievements and saves.
+- Fully playable on Windows and Linux: tested from the start of the campaign
+  to the end credits. Video, audio, gameplay, achievements and saves work.
 - Two renderers: the SDK's native Vulkan renderer (`gpu_plugin = "native"`, as
   shipped) and the Xenos GPU emulation (`gpu_plugin = "xenos"`: D3D12, Vulkan,
   D3D11) to fall back to.
+- Upscalers and frame generation in the native renderer on Windows: AMD FSR
+  3.1/4, Intel XeSS and NVIDIA DLSS (`native_temporal_upscaler`), AMD FSR and
+  NVIDIA DLSS frame generation (`native_frame_generation`). The 3D scene is
+  processed with its depth, motion (camera and moving objects) and jitter,
+  while the HUD stays at full resolution. See [`settings/faq.md`](settings/faq.md).
 - A launcher (`perfectdarkzerorecomp_launcher.exe`) for the main settings, see
   [Launcher](#launcher).
 - Keyboard and mouse support, with native mouse look (`pdz_mouse_*` in

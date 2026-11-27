@@ -16,19 +16,23 @@ gpu_plugin = "native"
 graphics_backend = "vulkan"
 vsync = true
 resolution_scale = 2
-present_effect = "fsr"
+present_effect = "bilinear"
 present_fsr_sharpness_reduction = 0.2
 present_dither = true
 swap_post_effect = "smaa"
 async_shader_compilation = true
-native_2x_msaa = true
+native_2x_msaa = false
 anisotropic_override = 5
 present_fsr_quality_mode = "auto"
 present_fsr_max_upsampling_passes = 1
 present_cas_additional_sharpness = 0.2
 
-# native render option
-#native_resolution_scale = 2.25
+native_resolution_scale = 2
+native_defer_full_resolve_loads = true
+native_temporal_upscaler = "off"
+native_scene_upscale = false
+native_fsr_sharpness = 0.5
+native_frame_generation = "off"
 
 readback_memexport = false
 readback_memexport_fast = false
@@ -83,7 +87,7 @@ d3d11_debug = false
 headless = false
 
 # trace, debug, info, warn, error, critical
-log_level = "error"
+log_level = "info"
 
 # Perf CSV log path (per-frame metrics). Empty = disabled.
 # Only works when REXGLUE_ENABLE_PERF_COUNTERS is defined (non-Release).

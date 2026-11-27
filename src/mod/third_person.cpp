@@ -80,6 +80,8 @@ namespace
   // Gameplay camera mode we last wrote our offset into, so that turning the
   // mod off can put that camera back in the head once.
   uint32_t g_offset_mode = 0;
+  // The player's camera mode (the scene producer reads its positions).
+  std::atomic<uint32_t> g_player_mode{0};
 
   // Mode id 0 is also used by other camera controllers (the CamSpy has its own).
   // Only the player's camera gets the offset: the player class has
@@ -239,6 +241,10 @@ REX_HOOK_RAW(sub_8220D9C8)
   const uint32_t target = ctx.r4.u32;
 
   const bool is_player = IsPlayer(base, target);
+  if (is_player)
+  {
+    g_player_mode.store(mode, std::memory_order_relaxed);
+  }
   const float fov = LoadBeFloat(base, mode + kFov);
   if (is_player && fov > 0.0f)
   {
@@ -427,5 +433,10 @@ namespace third_person
       {
         REXCVAR_SET(pdz_tp_enable, !REXCVAR_GET(pdz_tp_enable));
       } });
+  }
+
+  uint32_t PlayerCameraMode()
+  {
+    return g_player_mode.load(std::memory_order_relaxed);
   }
 } // namespace third_person

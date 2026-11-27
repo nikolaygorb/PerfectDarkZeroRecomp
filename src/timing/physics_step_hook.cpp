@@ -16,6 +16,8 @@
 
 #include <rex/hook.h>
 
+#include "../render/engine/scene_probe.h"
+
 REX_EXTERN(__imp__sub_829B61D0);
 
 namespace
@@ -33,8 +35,11 @@ namespace
 
 REX_HOOK_RAW(sub_829B61D0)
 {
+  const float frame_seconds = static_cast<float>(ctx.f1.f64);
   const float requested = static_cast<float>(ctx.f2.f64);
-  const float step = SolverStep(static_cast<float>(ctx.f1.f64), requested);
+  const float step = SolverStep(frame_seconds, requested);
+  // Simulated frame time for temporal history (scene stream; a no-op otherwise).
+  pdz::engine::scene::NoteFrameTime(frame_seconds);
   if (step < requested)
   {
     ctx.f2.f64 = step;

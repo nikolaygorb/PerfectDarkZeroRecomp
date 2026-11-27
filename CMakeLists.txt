@@ -41,6 +41,9 @@ set(PERFECTDARKZERORECOMP_SOURCES
     src/render/gpu_wait_hook.cpp
     src/render/graphics_backend.cpp
     src/render/native_memory_hook.cpp
+    src/render/engine/engine.cpp
+    src/render/engine/scene_probe.cpp
+    src/render/engine/render_hooks.cpp
     src/timing/physics_step_hook.cpp
     src/timing/cutscene_frame_cap_hook.cpp
     src/timing/rate_fixes.cpp
@@ -66,6 +69,14 @@ else()
 endif()
 
 rexglue_setup_target(perfectdarkzerorecomp GPU_PLUGINS xenos native)
+
+add_custom_target(pdz_stage_runtime
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:rexruntime> $<TARGET_FILE:rexgpu-native> $<TARGET_FILE:rexgpu-xenos>
+            $<TARGET_FILE_DIR:perfectdarkzerorecomp>
+    DEPENDS rexruntime rexgpu-native rexgpu-xenos
+    VERBATIM)
+add_dependencies(perfectdarkzerorecomp pdz_stage_runtime)
 
 rexglue_add_launcher(perfectdarkzerorecomp ICON_RC src/perfectdarkzerorecomp.rc)
 
